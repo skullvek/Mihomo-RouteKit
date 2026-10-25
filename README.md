@@ -71,8 +71,10 @@
 | [`.github/`](./.github/workflows/validate.yml) | GitHub Actions 自动验证配置 | 每次提交自动运行，无需导入客户端 |
 | [`tests/`](./tests/) | 示例订阅与脚本回归测试 | 修改脚本时验证行为，无需导入客户端 |
 | [`assets/`](./assets/) | README 插图（策略组结构图） | 结构变化时替换对应 PNG，文件名与 README 引用保持一致 |
+| [`AGENTS.md`](./AGENTS.md) | 维护说明（面向 AI 代理） | 改脚本 / 规则 / 文档前先读：契约、验证命令、README 同步点 |
+| [`PROGRESS.md`](./PROGRESS.md) | 维护进度与变更日志 | 每次改动追加一行，并更新「当前状态」 |
 
-**普通使用只需复制对应客户端的 JS 脚本。** 上述目录均已随新版发布到 `main`，无需手动下载或放入客户端。`rules/` 会被最终 Mihomo 配置中的 Rule Providers 引用，`.github/`、`tests/` 与 `assets/` 分别用于自动验证、回归测试与 README 插图。
+**普通使用只需复制对应客户端的 JS 脚本。** 上述目录均已随新版发布到 `main`，无需手动下载或放入客户端。`rules/` 会被最终 Mihomo 配置中的 Rule Providers 引用；`.github/`、`tests/`、`assets/` 分别用于自动验证、回归测试与 README 插图；`AGENTS.md` / `PROGRESS.md` 是给维护代理看的规范与进度板。
 
 ### 什么情况下改哪个文件？
 
