@@ -69,8 +69,9 @@
 | [`rules/`](./rules/) | 自维护的直连、代理与 Fake-IP 补丁 | Mihomo 自动下载；需要修正域名时编辑对应 `.list` 文件 |
 | [`.github/`](./.github/workflows/validate.yml) | GitHub Actions 自动验证配置 | 每次提交自动运行，无需导入客户端 |
 | [`tests/`](./tests/) | 示例订阅与脚本回归测试 | 修改脚本时验证行为，无需导入客户端 |
+| [`assets/`](./assets/) | README 插图（策略组结构图） | 结构变化时替换对应 PNG，文件名与 README 引用保持一致 |
 
-**普通使用只需复制对应客户端的 JS 脚本。** 三个目录已经随新版发布到 `main`，无需手动下载或放入客户端。`rules/` 会被最终 Mihomo 配置中的 Rule Providers 引用，`.github/` 与 `tests/` 用于仓库维护。
+**普通使用只需复制对应客户端的 JS 脚本。** 上述目录均已随新版发布到 `main`，无需手动下载或放入客户端。`rules/` 会被最终 Mihomo 配置中的 Rule Providers 引用，`.github/`、`tests/` 与 `assets/` 分别用于自动验证、回归测试与 README 插图。
 
 ### 什么情况下改哪个文件？
 
@@ -200,55 +201,11 @@ Bettbox 关闭服务或地区开关后，对应组会动态减少。
 
 ## 代理组架构
 
-### 结构总览（可缩放）
+### 结构总览
 
-下图由 GitHub 原生渲染 Mermaid，可用右上角控件缩放、拖动或全屏查看；每个节点对应脚本 `config["proxy-groups"]` 中的实际策略组，自上而下即主界面 01–25 的显示顺序（末尾另附 9 个隐藏地区自动组），虚线框标注该组写入的类型与可选项。三版脚本的结构完全一致。
+![三端扩展脚本的策略组结构：扩展脚本 → 主界面 25 个策略组（基础 / AI / 国际服务 / 地区聚合），右侧为各组可选项说明](assets/proxy-groups.png)
 
-```mermaid
-flowchart LR
-  S["扩展脚本"]
-
-  S --> G1["全球手动"]
-  S --> G2["自动选择"]
-  S --> G3["国外流量"]
-  S --> G4["漏网之鱼"]
-
-  S --> A1["ChatGPT"]
-  S --> A2["Claude"]
-  S --> A3["Gemini / NotebookLM"]
-
-  S --> P1["Google"]
-  S --> P2["GitHub"]
-  S --> P3["X"]
-  S --> P4["YouTube"]
-  S --> P5["Netflix"]
-  S --> P6["Telegram"]
-  S --> P7["Microsoft"]
-  S --> P8["Apple"]
-  S --> P9["游戏平台"]
-
-  S --> R1["香港聚合"]
-  S --> R2["澳门聚合"]
-  S --> R3["台湾聚合"]
-  S --> R4["新加坡聚合"]
-  S --> R5["韩国聚合"]
-  S --> R6["日本聚合"]
-  S --> R7["美国聚合"]
-  S --> R8["欧洲聚合"]
-  S --> R9["其他地区"]
-
-  S --> H1["隐藏地区自动组 9<br/>hidden · url-test"]
-
-  G1 -.-> N1["select；香港 → 澳门 → 台湾 → 新加坡 → 韩国 → 日本 → 美国 → 欧洲 → 其他<br/>过滤伪节点，内联节点数字自然排序；无 DIRECT"]
-  G3 -.-> N2["select；自动选择 / 全球手动 / 9 个地区聚合<br/>只提供代理路径，无 DIRECT"]
-  G4 -.-> N3["select；默认 国外流量，另可切 自动选择 / 全球手动 / DIRECT"]
-  A1 -.-> N4["ChatGPT / Claude / Gemini：select<br/>自动选择 / 全球手动 / 9 个地区聚合<br/>不含 DIRECT，也不引用可间接直连的上级组"]
-  P1 -.-> N5["Google / GitHub / X / YouTube / Netflix / Telegram：select<br/>自动选择 / 全球手动 / 9 个地区聚合 / DIRECT<br/>默认首项「自动选择」"]
-  P7 -.-> N6["Microsoft / Apple / 游戏平台：select<br/>选项同上，default-selected: DIRECT"]
-  R1 -.-> N7["select；首项为该地区隐藏自动组，其后为该地区全部节点"]
-```
-
-> 虚线框为脚本实际写入的类型与选项。`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连；其余服务组未显式选择时选中首项 `自动选择`。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则同时移除 9 个地区聚合组与 9 个隐藏自动组。
+> 三版脚本结构一致，图中顺序即主界面 01–25 的显示顺序；另有 9 个隐藏地区自动测速组未在图中。`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连，其余服务组未显式选择时选中首项 `自动选择`。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则同时移除 9 个地区聚合组与 9 个隐藏自动组。
 
 ### 主界面显示顺序（三版一致）
 
