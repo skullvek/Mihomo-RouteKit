@@ -51,12 +51,13 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-10-22 | 同时被上游 CN 分类收录的国际服务域名改由 `SKULL_CustomProxy` 前置接管（WorkBuddy / CodeBuddy、Qoder、Qwen、Z.ai、MiniMax、Moonshot、TRAE 与 Coze 国际版、Lark / WPS、Kling / WeTV / iQIYI 国际版、国际云接口），业务与 DNS 均经 `国外流量`，且不整体代理 `mchost.guru`、`aliyuncs.com` 等共享父域；三版脚本版本标识统一为 `2026.10.22-r2`，运行时补丁 URL 与 README 链接迁移到 `skullvek/Mihomo-RouteKit`。 |
 | 2026-10-18 | 新增 FlClash 独立扩展脚本；保留现有策略组与 41 条规则、NTP 直连修复；适配客户端 DNS / TUN / 选择缓存管理，补丁 URL 使用当前 `skullvek` 仓库；纳入 Node / QuickJS 回归。 |
 | 2026-10-15 | 优化两端伪节点过滤，排除客服邮箱、订阅更新提示与明确的 TG / Telegram 群组和频道公告；避免误排真实的 TG 专线节点。 |
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-脚本顶部版本标识为 `2026.10.02-r1`（Clash Verge Rev）、`2026.10.04-r1`（Bettbox）、`2026.10.18-r1`（FlClash），并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.10.22-r2`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -86,9 +87,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.02-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.04-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.18-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.22-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.10.22-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.10.22-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
