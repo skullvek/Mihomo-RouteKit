@@ -200,6 +200,79 @@ Bettbox 关闭服务或地区开关后，对应组会动态减少。
 
 ## 代理组架构
 
+### 结构总览（可缩放）
+
+下图由 GitHub 原生渲染 Mermaid，可用右上角控件缩放、拖动或全屏查看；每个节点对应脚本 `config["proxy-groups"]` 中的实际策略组，虚线框标注该组写入的类型与可选项。三版脚本的结构完全一致。
+
+```mermaid
+flowchart LR
+  S["扩展脚本<br/>保留订阅 proxies / proxy-providers<br/>重建 34 个策略组"]
+
+  subgraph BASE["基础组 4"]
+    direction TB
+    G1["全球手动"]
+    G2["自动选择"]
+    G3["国外流量"]
+    G4["漏网之鱼"]
+  end
+
+  subgraph AIG["AI 组 3"]
+    direction TB
+    A1["ChatGPT"]
+    A2["Claude"]
+    A3["Gemini / NotebookLM"]
+  end
+
+  subgraph SVC["国际服务组 9"]
+    direction TB
+    P1["Google"]
+    P2["GitHub"]
+    P3["X"]
+    P4["YouTube"]
+    P5["Netflix"]
+    P6["Telegram"]
+    P7["Microsoft"]
+    P8["Apple"]
+    P9["游戏平台"]
+  end
+
+  subgraph REG["地区聚合组 9"]
+    direction TB
+    R1["香港聚合"]
+    R2["澳门聚合"]
+    R3["台湾聚合"]
+    R4["新加坡聚合"]
+    R5["韩国聚合"]
+    R6["日本聚合"]
+    R7["美国聚合"]
+    R8["欧洲聚合"]
+    R9["其他地区"]
+  end
+
+  subgraph HID["隐藏地区自动组 9（hidden）"]
+    direction TB
+    H1["香港自动 · 澳门自动 · 台湾自动<br/>新加坡自动 · 韩国自动 · 日本自动<br/>美国自动 · 欧洲自动 · 其他自动"]
+  end
+
+  S --> BASE
+  S --> AIG
+  S --> SVC
+  S --> REG
+  S --> HID
+
+  G1 -.-> N1["select；节点按 香港 → 澳门 → 台湾 → 新加坡 → 韩国 → 日本 → 美国 → 欧洲 → 其他 排序<br/>过滤到期 / 流量 / 公告等伪节点，内联节点按数字自然排序；不提供 DIRECT"]
+  G2 -.-> N2["url-test；全节点测速 600s、容差 80ms、lazy"]
+  G3 -.-> N3["select；自动选择 / 全球手动 / 9 个地区聚合<br/>只提供代理路径，不提供 DIRECT"]
+  G4 -.-> N4["select；默认 国外流量，另可切 自动选择 / 全球手动 / DIRECT"]
+  A1 -.-> N5["select；自动选择 / 全球手动 / 9 个地区聚合<br/>不提供 DIRECT，也不引用可间接直连的上级组"]
+  P1 -.-> N6["select；自动选择 / 全球手动 / 9 个地区聚合 / DIRECT<br/>未显式选择时默认选中首项「自动选择」"]
+  P9 -.-> N7["Microsoft / Apple / 游戏平台<br/>default-selected: DIRECT，仍可手动切换"]
+  R1 -.-> N8["select；首项为该地区隐藏自动组，其后为该地区全部节点"]
+  H1 -.-> N9["url-test；仅由对应地区聚合组调用，不出现在主界面"]
+```
+
+> 虚线框为脚本实际写入的类型与选项。`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连；其余服务组未显式选择时选中首项 `自动选择`。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则同时移除 9 个地区聚合组与 9 个隐藏自动组。
+
 ### 主界面显示顺序（三版一致）
 
 | 顺序 | 策略组 |
