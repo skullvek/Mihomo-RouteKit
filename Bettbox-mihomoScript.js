@@ -38,7 +38,7 @@ var serviceConfigs = [
 ];
 
 // Bettbox Android 全局覆写脚本
-// Version: 2026.10.22-r2
+// Version: 2026.10.25-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点）。
 // 用法：设置 -> 高级设置 -> 脚本；配置 -> 订阅 -> 覆写 -> 脚本。
 
@@ -414,6 +414,11 @@ function main(config) {
     ...REGION_GROUPS,
     "DIRECT"
   ];
+  // 服务组默认选中「全球手动」，与 README 结构图一致；DIRECT 默认组显式覆盖。
+  const serviceSelect = (name, icon, defaultSelected = "全球手动") => ({
+    ...select(name, icon, SERVICE_OPTIONS),
+    "default-selected": defaultSelected
+  });
 
   // 一般国外流量只允许代理路径。
   const FOREIGN_OPTIONS = [
@@ -477,24 +482,16 @@ function main(config) {
     select("Gemini / NotebookLM", ICON.gemini, AI_OPTIONS),
 
     // 6. 常用国际服务
-    select("Google", ICON.google, SERVICE_OPTIONS),
-    select("GitHub", ICON.github, SERVICE_OPTIONS),
-    select("X", ICON.x, SERVICE_OPTIONS),
-    select("YouTube", ICON.youtube, SERVICE_OPTIONS),
-    select("Netflix", ICON.netflix, SERVICE_OPTIONS),
-    select("Telegram", ICON.telegram, SERVICE_OPTIONS),
-    {
-      ...select("Microsoft", ICON.microsoft, SERVICE_OPTIONS),
-      "default-selected": "DIRECT"
-    },
-    {
-      ...select("Apple", ICON.apple, SERVICE_OPTIONS),
-      "default-selected": "DIRECT"
-    },
-    {
-      ...select("游戏平台", ICON.games, SERVICE_OPTIONS),
-      "default-selected": "DIRECT"
-    },
+    serviceSelect("Google", ICON.google),
+    serviceSelect("GitHub", ICON.github),
+    serviceSelect("X", ICON.x),
+    serviceSelect("YouTube", ICON.youtube),
+    serviceSelect("Netflix", ICON.netflix),
+    serviceSelect("Telegram", ICON.telegram),
+    // Microsoft / Apple / 游戏平台首次默认 DIRECT，其余六个服务组默认「全球手动」。
+    serviceSelect("Microsoft", ICON.microsoft, "DIRECT"),
+    serviceSelect("Apple", ICON.apple, "DIRECT"),
+    serviceSelect("游戏平台", ICON.games, "DIRECT"),
 
     // 7. 地区聚合：自动测速 + 本地区全部节点
     regionAggregate("香港聚合", "香港自动", ICON.hk, FILTER.hk, REGION_EXCLUDE.hk),

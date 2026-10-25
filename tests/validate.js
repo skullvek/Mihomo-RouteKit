@@ -71,6 +71,9 @@ for (const file of SCRIPTS) {
       assert.ok(!c['proxy-groups'].find(g => g.name === name).proxies.includes('DIRECT'), name);
     }
     for (const name of ['Microsoft', 'Apple', '游戏平台']) assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], 'DIRECT');
+    for (const name of ['Google', 'GitHub', 'X', 'YouTube', 'Netflix', 'Telegram']) {
+      assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], '全球手动', name);
+    }
     assert.equal(c['proxy-groups'].find(g => g.name === '漏网之鱼').proxies[0], '国外流量');
     assert.ok(c.rules.includes('RULE-SET,SKULL_ChinaIP,DIRECT'));
     assert.equal(c.rules.at(-1), 'MATCH,漏网之鱼');

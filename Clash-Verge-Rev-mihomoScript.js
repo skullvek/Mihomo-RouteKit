@@ -1,5 +1,5 @@
 // Clash Verge Rev 全局扩展脚本
-// Version: 2026.10.22-r2
+// Version: 2026.10.25-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点）。
 // 用法：订阅 -> 全局扩展脚本（Script）
 
@@ -382,6 +382,11 @@ function main(config, profileName) {
     ...REGION_GROUPS,
     "DIRECT"
   ];
+  // 服务组默认选中「全球手动」，与 README 结构图一致；DIRECT 默认组显式覆盖。
+  const serviceSelect = (name, icon, defaultSelected = "全球手动") => ({
+    ...select(name, icon, SERVICE_OPTIONS),
+    "default-selected": defaultSelected
+  });
 
   // “国外流量”只负责一般国外流量，不提供 DIRECT。
   const FOREIGN_OPTIONS = [
@@ -445,25 +450,16 @@ function main(config, profileName) {
     select("Gemini / NotebookLM", ICON.gemini, AI_OPTIONS),
 
     // 3. 常用国际服务
-    select("Google", ICON.google, SERVICE_OPTIONS),
-    select("GitHub", ICON.github, SERVICE_OPTIONS),
-    select("X", ICON.x, SERVICE_OPTIONS),
-    select("YouTube", ICON.youtube, SERVICE_OPTIONS),
-    select("Netflix", ICON.netflix, SERVICE_OPTIONS),
-    select("Telegram", ICON.telegram, SERVICE_OPTIONS),
-    {
-      ...select("Microsoft", ICON.microsoft, SERVICE_OPTIONS),
-      "default-selected": "DIRECT"
-    },
-    {
-      ...select("Apple", ICON.apple, SERVICE_OPTIONS),
-      "default-selected": "DIRECT"
-    },
-    // Microsoft / Apple / 游戏平台首次使用默认直连，仍允许手动切换。
-    {
-      ...select("游戏平台", ICON.games, SERVICE_OPTIONS),
-      "default-selected": "DIRECT"
-    },
+    serviceSelect("Google", ICON.google),
+    serviceSelect("GitHub", ICON.github),
+    serviceSelect("X", ICON.x),
+    serviceSelect("YouTube", ICON.youtube),
+    serviceSelect("Netflix", ICON.netflix),
+    serviceSelect("Telegram", ICON.telegram),
+    // Microsoft / Apple / 游戏平台首次默认 DIRECT，其余六个服务组默认「全球手动」。
+    serviceSelect("Microsoft", ICON.microsoft, "DIRECT"),
+    serviceSelect("Apple", ICON.apple, "DIRECT"),
+    serviceSelect("游戏平台", ICON.games, "DIRECT"),
 
     // 4. 地区聚合：聚合组 = 地区自动测速 + 该地区全部节点
     regionAggregate("香港聚合", "香港自动", ICON.hk, FILTER.hk, REGION_EXCLUDE.hk),
