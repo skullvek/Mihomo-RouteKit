@@ -18,7 +18,8 @@
 
 | 日期 | 提交 | 类型 | 内容 | 验证 |
 | --- | --- | --- | --- | --- |
-| 2026-10-25 | — | docs | 新增 `AGENTS.md`（维护规范）与 `PROGRESS.md`（本文件）、`AGENT.md` 兼容入口；README 仓库目录表补三行 | 链接目标存在性检查、`node --test` 53/53 |
+| 2026-10-25 | — | docs | 删除误建的 `AGENT.md`，维护说明统一为 `AGENTS.md` | `git grep AGENT.md` 无残留引用 |
+| 2026-10-25 | — | docs | 新增 `AGENTS.md`（维护规范）与 `PROGRESS.md`（本文件）；README 仓库目录表补两行 | 链接目标存在性检查、`node --test` 53/53 |
 | 2026-10-25 | `cf41ffe` | feat | Google / GitHub / X / YouTube / Netflix / Telegram 六组改 `default-selected: 全球手动`；`Microsoft` / `Apple` / `游戏平台` 保持 `DIRECT`；版本升 `2026.10.25-r1`；README 同步 7 处 | `node --check` ×3、`node --test` 53/53、三端默认项打印、CI success |
 | 2026-10-25 | `20090fb` | docs | README「结构总览」由 Mermaid 改为 `assets/proxy-groups.png`；仓库目录表补 `assets/` | 远端 `img` 加载校验（2337×3304）、CI success |
 | 2026-10-25 | `667e4a1` | docs | Mermaid 结构图改为与主界面一致的纵向单列顺序（25 组 + 隐藏组） | Mermaid 10/11 渲染、节点顺序程序化比对、CI success |
