@@ -51,6 +51,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-10-26 | Clash Verge Rev 的 `direct-nameserver-follow-policy` 改为 `true`：直连拨号解析也遵守 `nameserver-policy`，LAN / 私有域名走系统 DNS，内网主机名不再被发往公共 DNS；未命中 policy 的直连域名仍回落 `direct-nameserver`（国内 DoH）。三版版本标识统一为 `2026.10.26-r2`。 |
 | 2026-10-26 | 三端补订阅字段类型防御：`listeners` / `tunnels` / `inline payload` 不是数组时不再抛错（此前会因 `for...of` 抛异常导致整份覆写被丢弃）；欧洲识别补奥地利、比利时、捷克、丹麦、葡萄牙、希腊、冰岛、卢森堡 8 个中文国名与 7 个城市名；Bettbox 只对仍存在的脚本组名做节点改名；`profile` 为非对象时不再被对象展开；统一 `RULESET_SIZE_LIMIT` 常量名。三版版本标识统一为 `2026.10.26-r1`。 |
 | 2026-10-25 | Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」；Microsoft / Apple / 游戏平台 仍默认 `DIRECT`。三版版本标识统一为 `2026.10.25-r1`。 |
 | 2026-10-22 | 同时被上游 CN 分类收录的国际服务域名改由 `SKULL_CustomProxy` 前置接管（WorkBuddy / CodeBuddy、Qoder、Qwen、Z.ai、MiniMax、Moonshot、TRAE 与 Coze 国际版、Lark / WPS、Kling / WeTV / iQIYI 国际版、国际云接口），业务与 DNS 均经 `国外流量`，且不整体代理 `mchost.guru`、`aliyuncs.com` 等共享父域；三版脚本版本标识统一为 `2026.10.22-r2`，运行时补丁 URL 与 README 链接迁移到 `skullvek/Mihomo-RouteKit`。 |
@@ -59,7 +60,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.10.26-r1`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.10.26-r2`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -92,9 +93,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.26-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.26-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.26-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.26-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.10.26-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.10.26-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -561,7 +562,7 @@ fake-ip-filter-mode: blacklist
 > [!WARNING]
 > **Bettbox 请关闭 App 内的「DNS 覆写」后再使用本节策略。** Bettbox 会在脚本执行后继续应用客户端设置；一旦开启 DNS 覆写，整段 `dns` 会被客户端重新生成，脚本中的 `nameserver-policy`、`direct-nameserver` 等设置将不再生效。
 
-FlClash v0.9.0+ 应取消已选的 DNS 覆写字段，并关闭“追加系统 DNS”；保留脚本生成的 `dns.enable: true`。旧版有 DNS 总覆写开关时关闭该覆写开关，详见[快速开始](#flclash)。Bettbox / FlClash 使用 `direct-nameserver-follow-policy: true`，让 LAN 等明确 policy 继续控制直连解析；Clash Verge Rev 保持 `false`。
+FlClash v0.9.0+ 应取消已选的 DNS 覆写字段，并关闭“追加系统 DNS”；保留脚本生成的 `dns.enable: true`。旧版有 DNS 总覆写开关时关闭该覆写开关，详见[快速开始](#flclash)。三版均使用 `direct-nameserver-follow-policy: true`，让 LAN 等明确 policy 继续控制直连解析（内网主机名只走系统 DNS）；未命中 policy 的直连域名仍回落 `direct-nameserver`（国内 DoH），国内解析路径不变。
 
 ### Fake-IP Filter
 

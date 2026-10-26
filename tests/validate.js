@@ -79,6 +79,8 @@ for (const file of SCRIPTS) {
     assert.equal(c.rules.at(-1), 'MATCH,漏网之鱼');
     assert.ok(c.dns.nameserver.every(url => url.endsWith('#国外流量')));
     assert.ok(c.dns['proxy-server-nameserver'].every(url => url.endsWith('#DIRECT')));
+    assert.equal(c.dns['direct-nameserver-follow-policy'], true);
+    assert.ok(c.dns['direct-nameserver'].every(url => url.endsWith('#DIRECT')));
   });
   test(`${file}: airport tokens classified once with letter boundaries`, () => {
     const c = execute(file, fixture('provider-only'));

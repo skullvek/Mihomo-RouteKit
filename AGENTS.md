@@ -51,7 +51,7 @@
 5. **规则顺序固定**（命中即停）：
    LAN → NotebookLM/Gemini 精确域名 → OpenAI/Claude/Gemini →（Bettbox/FlClash）`pool.ntp.org` 与 UDP/123 → `SKULL_CustomDirect` → `SKULL_CustomProxy` → `apple@cn` / `microsoft@cn` / 国内游戏与下载 CDN → 7 个游戏平台 → 8 个服务组 → `cn` → `geolocation-!cn` → 5 条 IP（`no-resolve`）→ China IP → `MATCH,漏网之鱼`。
    改顺序前先想清楚谁会被提前接管（典型事故：AI 被 Google 抢走、Xbox 被 Microsoft 抢走、国内游戏走代理）。
-6. **DNS 结构**：fake-ip `198.18.0.1/16` + `blacklist`（只继承订阅中同为 blacklist 的 filter）；国内域名/自定义直连走国内 DoH `#DIRECT`；默认与境外走 Cloudflare/Google DoH `#国外流量`；AI 域名 `nameserver-policy` 跟随各自 AI 组；`direct-nameserver` 与 `proxy-server-nameserver` 用国内 DoH（后者防 `nameserver → 国外流量 → 节点域名` 循环）。
+6. **DNS 结构**：fake-ip `198.18.0.1/16` + `blacklist`（只继承订阅中同为 blacklist 的 filter）；国内域名/自定义直连走国内 DoH `#DIRECT`；默认与境外走 Cloudflare/Google DoH `#国外流量`；AI 域名 `nameserver-policy` 跟随各自 AI 组；`direct-nameserver` 与 `proxy-server-nameserver` 用国内 DoH（后者防 `nameserver → 国外流量 → 节点域名` 循环）。三端 `direct-nameserver-follow-policy: true`：直连拨号解析也遵守 `nameserver-policy`（LAN → `system`，AI/补丁域名跟随各自组），未命中 policy 的域名回落 `direct-nameserver`，内网主机名不外发。
 7. **`rules/*.list` 只写域名**：`+.example.com` 匹配主域与全部子域，裸域名精确匹配。不写 `DOMAIN-SUFFIX,`、策略名或 `payload:`。CI 会校验格式、重复行、直连/代理冲突，并拒绝把共享父域整体代理（如 `mchost.guru`、`aliyuncs.com`）。
 8. **不得提交**真实订阅 URL、节点密码、UUID、Token、Cookie；测试数据一律用 `*.example` 假域名。
 
@@ -64,7 +64,6 @@
 | 顶层 `ipv6` | 不强制 | 写 `false`，App 覆盖 | 不写 |
 | `find-process-mode` | `strict` | `off` | 不写 |
 | `profile.store-selected` | `true` | `true` | 不写（FlClash 自管） |
-| `direct-nameserver-follow-policy` | `false` | `true` | `true` |
 
 ## 4. 改一个功能要动哪些文件
 

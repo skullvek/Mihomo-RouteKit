@@ -1,5 +1,5 @@
 // Clash Verge Rev 全局扩展脚本
-// Version: 2026.10.26-r1
+// Version: 2026.10.26-r2
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点）。
 // 用法：订阅 -> 全局扩展脚本（Script）
 
@@ -898,10 +898,11 @@ function main(config, profileName) {
       "rule-set:SKULL_GamesDownloadCN": [...DOMESTIC_DNS]
     },
 
-    // 已判定为 DIRECT 的域名连接独立解析，避免手选直连后仍依赖国外 DNS 出口。
-    // 不将所有 Apple/Microsoft 域名固定国内解析，保留手选代理时的默认 DNS 路径。
+    // 已判定为 DIRECT 的域名默认回落到国内 DoH，避免手选直连后仍依赖境外 DNS。
+    // follow-policy 让直连拨号解析也遵守上面的 nameserver-policy：LAN/私有域名走系统 DNS
+    // （主机名不出局域网），AI 与自定义代理域名跟随各自策略组；未命中 policy 的域名仍回落 direct-nameserver。
     "direct-nameserver": [...DOMESTIC_DNS],
-    "direct-nameserver-follow-policy": false,
+    "direct-nameserver-follow-policy": true,
 
     // 代理服务器域名必须独立直连解析，避免 nameserver -> 国外流量 -> 节点域名解析形成循环依赖。
     "proxy-server-nameserver": [...DOMESTIC_DNS]
