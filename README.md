@@ -51,6 +51,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-10-26 | 复核国内识别：geosite `cn` 已收录 11 万条域名（含全部 `.cn`），抽查 356 个国内主流域名 / App 后端，仅 `cnbeta.com` 被 `geolocation-!cn` 误判为国外走代理；`rules/direct.list` 补入 `cnbeta.com` / `cnbetacdn.com` 与 11 个国内统计、广告、推送后端。三版版本标识统一为 `2026.10.26-r3`。 |
 | 2026-10-26 | Clash Verge Rev 的 `direct-nameserver-follow-policy` 改为 `true`：直连拨号解析也遵守 `nameserver-policy`，LAN / 私有域名走系统 DNS，内网主机名不再被发往公共 DNS；未命中 policy 的直连域名仍回落 `direct-nameserver`（国内 DoH）。三版版本标识统一为 `2026.10.26-r2`。 |
 | 2026-10-26 | 三端补订阅字段类型防御：`listeners` / `tunnels` / `inline payload` 不是数组时不再抛错（此前会因 `for...of` 抛异常导致整份覆写被丢弃）；欧洲识别补奥地利、比利时、捷克、丹麦、葡萄牙、希腊、冰岛、卢森堡 8 个中文国名与 7 个城市名；Bettbox 只对仍存在的脚本组名做节点改名；`profile` 为非对象时不再被对象展开；统一 `RULESET_SIZE_LIMIT` 常量名。三版版本标识统一为 `2026.10.26-r1`。 |
 | 2026-10-25 | Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」；Microsoft / Apple / 游戏平台 仍默认 `DIRECT`。三版版本标识统一为 `2026.10.25-r1`。 |
@@ -60,7 +61,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.10.26-r2`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.10.26-r3`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -93,9 +94,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.26-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.26-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.26-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.26-r3` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.10.26-r3` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.10.26-r3` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -432,7 +433,7 @@ Bettbox 中关闭某个服务开关后：
 
 | 文件 | Provider | 用途 |
 | --- | --- | --- |
-| [`rules/direct.list`](./rules/direct.list) | `SKULL_CustomDirect` | 上游误判的国内域名直连；初始收录 `chatglm.cn` |
+| [`rules/direct.list`](./rules/direct.list) | `SKULL_CustomDirect` | 上游误判的国内域名直连；收录 `chatglm.cn`、`cnbeta.com` 与国内统计 / 广告 / 推送后端 |
 | [`rules/proxy.list`](./rules/proxy.list) | `SKULL_CustomProxy` | 国内厂商的国际服务与关联资源例外；覆盖 AI、办公、影音和国际云接口，见下表 |
 | [`rules/fake-ip-filter.list`](./rules/fake-ip-filter.list) | `SKULL_FakeIPFilter` | 追加 Fake-IP 兼容排除；初始为 NTP 与 Microsoft 联网检测 |
 

@@ -1,3 +1,21 @@
 # Domain/text: +.domain matches the apex and all subdomains.
 # Confirmed domestic service; use this layer only for small upstream corrections.
 +.chatglm.cn
+
+# 国内资讯站：geosite cn 未收录、geolocation-!cn 却收录，不补会被判成国外走代理。
++.cnbeta.com
++.cnbetacdn.com
+
+# 国内厂商的统计 / 广告 / 推送 / 网盘后端：页面与 App 高频调用。
+# 这些域名原本靠 SKULL_ChinaIP 解析后按 IP 兜底，补进来可省掉一次经代理的 DNS 解析。
++.mmstat.com
++.tanx.com
++.gdtimg.com
++.cnzz.com
++.snssdk.com
++.ibytedtos.com
++.mijia.com
++.mtdp.com
++.2345.com
++.getui.com
++.igexin.com
