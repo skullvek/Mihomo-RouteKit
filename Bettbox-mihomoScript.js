@@ -38,7 +38,7 @@ var serviceConfigs = [
 ];
 
 // Bettbox Android 全局覆写脚本
-// Version: 2026.10.25-r1
+// Version: 2026.10.26-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点）。
 // 用法：设置 -> 高级设置 -> 脚本；配置 -> 订阅 -> 覆写 -> 脚本。
 
@@ -74,6 +74,10 @@ function main(config) {
   const GROUP_EXCLUDE_TYPES = "Direct|Pass|Compatible";
   const isProxyCandidate = (proxy) =>
     proxy && !BYPASS_TYPES.includes(String(proxy.type || "").toLowerCase());
+
+  // 订阅字段类型防御：listeners / tunnels / inline payload 正常是数组，畸形订阅可能写成对象。
+  // 直接 for...of 会抛错，异常逃出 main() 后整份覆写会被客户端丢弃（CVR 回退原配置）。
+  const asArray = (value) => (Array.isArray(value) ? value : []);
 
   // ---------- 诊断收集 ----------
   // Bettbox 的 State.handleEvaluate 在脚本抛错时回退到原配置（返回未修改的 config），
@@ -186,7 +190,7 @@ function main(config) {
     kr: "🇰🇷|韩国|韓國|Korea|Seoul|(?:^|[^A-Za-z])(?:KR|KOR|ICN|GMP)(?:[0-9]|[^A-Za-z]|$)",
     jp: "🇯🇵|日本|东京|東京|大阪|Japan|Tokyo|Osaka|(?:^|[^A-Za-z])(?:JP(?:N)?|NRT|HND|KIX|CTS|FUK)(?:[0-9]|[^A-Za-z]|$)",
     us: "🇺🇸|美国|美國|美[.·|｜_\\s-]|United ?States|America|Los ?Angeles|洛杉矶|洛杉磯|San ?Jose|圣何塞|聖何塞|Seattle|西雅图|西雅圖|New ?York|纽约|紐約|Phoenix|凤凰城|鳳凰城|Salt ?Lake(?: ?City)?|盐湖城|鹽湖城|San ?Francisco|旧金山|舊金山|Dallas|达拉斯|達拉斯|Chicago|芝加哥|Las ?Vegas|拉斯维加斯|拉斯維加斯|Ashburn|阿什本|Boston|波士顿|波士頓|Miami|迈阿密|邁阿密|Denver|丹佛|Houston|休斯顿|休士頓|Austin|奥斯汀|奧斯汀|Washington ?D\\.?C\\.?|华盛顿(?:特区)?|華盛頓(?:特區)?|(?:^|[^A-Za-z])(?:LAX|SJC|SEA|NYC|PHX|SLC|SFO|DFW|ORD|LAS|IAD|BOS|MIA|DEN|IAH|HOU|DCA|US|USA)(?:[0-9]|[^A-Za-z]|$)",
-    eu: "🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇪🇸|🇮🇹|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇵🇱|🇮🇪|🇦🇹|🇧🇪|🇨🇿|🇩🇰|🇵🇹|🇬🇷|🇮🇸|🇱🇺|欧洲|歐洲|Europe|European|英国|英國|法国|法國|德国|德國|荷兰|荷蘭|西班牙|意大利|瑞士|瑞典|芬兰|挪威|Norway|波兰|爱尔兰|London|Paris|Frankfurt|Amsterdam|Madrid|Milan|Zurich|Stockholm|Helsinki|Oslo|Warsaw|Dublin|(?:^|[^A-Za-z])(?:EU|UK|GB|GBR|DE|DEU|FR|FRA|NL|NLD|ES|ESP|IT|ITA|CH|CHE|SE|SWE|FI|FIN|NOR|PL|POL|IE|IRL|AT|AUT|BE|BEL|CZ|CZE|DK|DNK|PT|PRT|GR|GRC)(?:[0-9]|[^A-Za-z]|$)"
+    eu: "🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇪🇸|🇮🇹|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇵🇱|🇮🇪|🇦🇹|🇧🇪|🇨🇿|🇩🇰|🇵🇹|🇬🇷|🇮🇸|🇱🇺|欧洲|歐洲|Europe|European|英国|英國|法国|法國|德国|德國|荷兰|荷蘭|西班牙|意大利|瑞士|瑞典|芬兰|挪威|Norway|波兰|爱尔兰|奥地利|比利时|捷克|丹麦|葡萄牙|希腊|冰岛|卢森堡|维也纳|布鲁塞尔|布拉格|哥本哈根|里斯本|雅典|雷克雅未克|London|Paris|Frankfurt|Amsterdam|Madrid|Milan|Zurich|Stockholm|Helsinki|Oslo|Warsaw|Dublin|Vienna|Brussels|Prague|Copenhagen|Lisbon|Athens|Reykjavik|(?:^|[^A-Za-z])(?:EU|UK|GB|GBR|DE|DEU|FR|FRA|NL|NLD|ES|ESP|IT|ITA|CH|CHE|SE|SWE|FI|FIN|NOR|PL|POL|IE|IRL|AT|AUT|BE|BEL|CZ|CZE|DK|DNK|PT|PRT|GR|GRC)(?:[0-9]|[^A-Za-z]|$)"
   };
 
   // 地区优先级：香港 → 澳门 → 台湾 → 新加坡 → 韩国 → 日本 → 美国 → 欧洲 → 其他
@@ -645,7 +649,7 @@ function main(config) {
         continue;
       }
       seenNodes.add(proxy.name);
-      if (reservedNames.has(proxy.name) || builtins.has(proxy.name)) {
+      if (newNames.has(proxy.name) || builtins.has(proxy.name)) {
         const originalName = proxy.name;
         const alias = uniqueAlias(`__SKULL_NODE__${originalName}`);
         nodeAliases.set(originalName, alias);
@@ -772,13 +776,13 @@ function main(config) {
       rewrite(provider, "proxy");
       rewrite(provider, "dialer-proxy");
       rewrite(provider.override, "dialer-proxy");
-      for (const proxy of provider.payload || []) rewrite(proxy, "dialer-proxy");
+      for (const proxy of asArray(provider.payload)) rewrite(proxy, "dialer-proxy");
     }
     for (const [name, provider] of Object.entries(config["rule-providers"])) {
       if (!Object.prototype.hasOwnProperty.call(customRuleProviders, name)) rewrite(provider, "proxy");
     }
-    for (const listener of config.listeners || []) rewrite(listener, "proxy");
-    for (const tunnel of config.tunnels || []) rewrite(tunnel, "proxy");
+    for (const listener of asArray(config.listeners)) rewrite(listener, "proxy");
+    for (const tunnel of asArray(config.tunnels)) rewrite(tunnel, "proxy");
     // 内核 RawNTP 里用于指定出站代理的字段名是 "dialer-proxy"，不存在 "ntp.proxy"。
     // 原脚本写成 "proxy" 导致这段检查从未生效，而真正需要保护的 dialer-proxy 反而不在范围内。
     rewrite(config.ntp, "dialer-proxy");
@@ -1046,8 +1050,12 @@ function main(config) {
   config["tcp-concurrent"] = true;
   config["find-process-mode"] = "off";
 
+  const oldProfile =
+    config.profile && typeof config.profile === "object" && !Array.isArray(config.profile)
+      ? config.profile
+      : {};
   config.profile = {
-    ...(config.profile || {}),
+    ...oldProfile,
     "store-selected": true,
     "store-fake-ip": true
   };

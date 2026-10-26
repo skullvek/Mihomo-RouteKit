@@ -172,6 +172,28 @@ for (const file of SCRIPTS) {
     assert.equal(health.url, 'https://example.com/check');
     assert.equal(health['expected-status'], undefined);
   });
+  test(`${file}: malformed listener / tunnel / payload shapes never throw`, () => {
+    const input = fixture('direct-proxies');
+    input.listeners = {in: {type: 'mixed', port: 7890, proxy: 'DIRECT'}};
+    input.tunnels = {t: {network: ['tcp'], proxy: 'DIRECT'}};
+    input['proxy-providers'] = {p: {type: 'inline', payload: {a: {name: 'x', type: 'ss'}}}};
+    assert.doesNotThrow(() => execute(file, input));
+  });
+  test(`${file}: Europe matches Chinese country and city names`, () => {
+    const c = execute(file, fixture('provider-only'));
+    const groups = c['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name));
+    const europe = ['丹麦 哥本哈根 01', '捷克 布拉格', '奥地利 维也纳', '比利时 布鲁塞尔', '葡萄牙 里斯本', '希腊 雅典', '冰岛 雷克雅未克', '卢森堡 01'];
+    for (const name of europe) {
+      assert.deepEqual(groups.filter(g => matches(g, name)).map(g => g.name), ['欧洲聚合'], name);
+    }
+    // Countries without any flag / airport-code coverage are a product decision; they stay 其他地区.
+    assert.deepEqual(groups.filter(g => matches(g, '匈牙利 布达佩斯')).map(g => g.name), ['其他地区']);
+  });
+  test(`${file}: non-object profile is replaced instead of spread`, () => {
+    const c = execute(file, {...fixture('direct-proxies'), profile: 'oops'});
+    assert.equal(c.profile['store-fake-ip'], true);
+    assert.equal(Object.hasOwn(c.profile, '0'), false);
+  });
 }
 for (const file of SCRIPTS.slice(1)) {
   test(`${file}: NTP routing overrides foreign classification after AI protection`, () => {
