@@ -6,11 +6,11 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 三端版本 | `2026.10.25-r1`（Clash Verge Rev / Bettbox / FlClash） |
+| 三端版本 | `2026.10.26-r1`（Clash Verge Rev / Bettbox / FlClash） |
 | 策略组 | 34（25 可见 + 9 隐藏地区自动组） |
 | 分流规则 | 39 / 41 / 41（CVR / Bettbox / FlClash） |
 | Rule Providers | 34（31 上游 `.mrs` @meta + 3 自维护 `domain/text`） |
-| 回归测试 | `node --test tests/validate.js` → 53 项 |
+| 回归测试 | `node --test tests/validate.js` → 62 项 |
 | 最近 CI | success — `Validate scripts`，run 40205585513，head `cf41ffe` |
 | 结构图 | `assets/proxy-groups.png`（README 结构总览，与脚本默认值一致） |
 
@@ -18,6 +18,7 @@
 
 | 日期 | 提交 | 类型 | 内容 | 验证 |
 | --- | --- | --- | --- | --- |
+| 2026-10-26 | `881bdf6` | fix | 三端补字段类型防御：`listeners` / `tunnels` / `inline payload` 非数组时用 `asArray` 兜底，不再因 `for...of` 抛错导致整份覆写被丢弃；欧洲补奥地利/比利时/捷克/丹麦/葡萄牙/希腊/冰岛/卢森堡 8 个中文国名与 7 个城市名；Bettbox 只对仍存在的脚本组名做节点改名；`profile` 非对象不再展开；统一 `RULESET_SIZE_LIMIT`；版本升 `2026.10.26-r1` | `node --check` ×3、`node --test` 62/62、mihomo v1.19.33 `-t` ×3 |
 | 2026-10-25 | — | docs | 删除误建的 `AGENT.md`，维护说明统一为 `AGENTS.md` | `git grep AGENT.md` 无残留引用 |
 | 2026-10-25 | — | docs | 新增 `AGENTS.md`（维护规范）与 `PROGRESS.md`（本文件）；README 仓库目录表补两行 | 链接目标存在性检查、`node --test` 53/53 |
 | 2026-10-25 | `cf41ffe` | feat | Google / GitHub / X / YouTube / Netflix / Telegram 六组改 `default-selected: 全球手动`；`Microsoft` / `Apple` / `游戏平台` 保持 `DIRECT`；版本升 `2026.10.25-r1`；README 同步 7 处 | `node --check` ×3、`node --test` 53/53、三端默认项打印、CI success |
