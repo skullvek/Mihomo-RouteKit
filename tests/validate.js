@@ -70,6 +70,9 @@ for (const file of SCRIPTS) {
     for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', '国外流量']) {
       assert.ok(!c['proxy-groups'].find(g => g.name === name).proxies.includes('DIRECT'), name);
     }
+    for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM']) {
+      assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], '全球手动', name);
+    }
     for (const name of ['Microsoft', 'Apple', '游戏平台']) assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], 'DIRECT');
     for (const name of ['Google', 'GitHub', 'X', 'YouTube', 'Netflix', 'Telegram']) {
       assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], '全球手动', name);
@@ -364,4 +367,9 @@ test('international patches cover overseas services without capturing domestic s
     'sub.trae-api-sg.mchost.guru'
   ];
   for (const host of unpatched) assert.ok(!matchesHost(host, proxy), host + ': exception too broad');
+  const mustBeDirect = ['wise.com', 'api.wise.com', 'transferwise.com', 'wise.us', 'wise.jobs', 'wi.se'];
+  for (const host of mustBeDirect) {
+    assert.ok(matchesHost(host, direct), host + ': Wise must bypass the proxy');
+    assert.ok(!matchesHost(host, proxy), host + ': Wise must not be captured by the proxy patch');
+  }
 });

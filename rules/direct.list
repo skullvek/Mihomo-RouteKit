@@ -1,5 +1,6 @@
 # Domain/text: +.domain matches the apex and all subdomains.
 # Confirmed domestic service; use this layer only for small upstream corrections.
+# Services that must never leave through the proxy (risk-control) also live here.
 +.chatglm.cn
 
 # 国内资讯站：geosite cn 未收录、geolocation-!cn 却收录，不补会被判成国外走代理。
@@ -19,3 +20,10 @@
 +.2345.com
 +.getui.com
 +.igexin.com
+
+# Wise（原 TransferWise）国际汇款：风控会拒绝机房 / VPN 出口，业务与 DNS 都必须直连。
++.wise.com
++.transferwise.com
++.wise.us
++.wise.jobs
++.wi.se

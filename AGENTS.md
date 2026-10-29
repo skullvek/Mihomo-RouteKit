@@ -41,7 +41,7 @@
    | --- | --- | --- | --- |
    | `全球手动` / `自动选择` / `国外流量` | `select` / `url-test` / `select` | 无 `DIRECT` | 首位 / 全节点测速 / 首位 |
    | `漏网之鱼` | `select` | `国外流量`→`自动选择`→`全球手动`→`DIRECT` | `国外流量` |
-   | AI 三组 | `select` | 自动选择 / 全球手动 / 9 个地区聚合 | 首位，**无 `DIRECT`** |
+   | AI 三组 | `select` | 自动选择 / 全球手动 / 9 个地区聚合 | **`default-selected: 全球手动`**，无 `DIRECT` |
    | Google / GitHub / X / YouTube / Netflix / Telegram | `select` | 上述 + `DIRECT` | **`default-selected: 全球手动`** |
    | Microsoft / Apple / 游戏平台 | `select` | 同上 | **`default-selected: DIRECT`** |
    | 地区聚合 ×9 | `select` | 该地区隐藏自动组 + 该地区全部节点 | 首位 |

@@ -36,7 +36,7 @@
 | 能力 | 默认行为 |
 | --- | --- |
 | 国内流量 | 中国大陆域名 / IP 与局域网优先 `DIRECT` |
-| AI 服务 | ChatGPT、Claude、Gemini / NotebookLM 独立分流，**不提供 `DIRECT` 路径** |
+| AI 服务 | ChatGPT、Claude、Gemini / NotebookLM 独立分流，**不提供 `DIRECT` 路径**；三组首次默认 `全球手动` |
 | 常用国际服务 | Google、GitHub、X、YouTube、Netflix、Telegram、Microsoft、Apple 独立策略组；前六个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
 | 游戏平台 | 三版均独立分流，首次默认 `DIRECT`；Bettbox 可通过可视化开关关闭 |
 | 地区节点 | 香港、澳门、台湾、新加坡、韩国、日本、美国、欧洲、其他地区；同时支持自动测速与手动选择 |
@@ -51,6 +51,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-10-29 | ChatGPT / Claude / Gemini / NotebookLM 三个 AI 组改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`rules/direct.list` 补入 Wise 汇款域名（`wise.com` / `transferwise.com` / `wise.us` / `wise.jobs` / `wi.se`），业务与 DNS 都直连，不再经 `国外流量`。三版版本标识统一为 `2026.10.29-r1`。 |
 | 2026-10-26 | 复核国内识别：geosite `cn` 已收录 11 万条域名（含全部 `.cn`），抽查 356 个国内主流域名 / App 后端，仅 `cnbeta.com` 被 `geolocation-!cn` 误判为国外走代理；`rules/direct.list` 补入 `cnbeta.com` / `cnbetacdn.com` 与 11 个国内统计、广告、推送后端。三版版本标识统一为 `2026.10.26-r3`。 |
 | 2026-10-26 | Clash Verge Rev 的 `direct-nameserver-follow-policy` 改为 `true`：直连拨号解析也遵守 `nameserver-policy`，LAN / 私有域名走系统 DNS，内网主机名不再被发往公共 DNS；未命中 policy 的直连域名仍回落 `direct-nameserver`（国内 DoH）。三版版本标识统一为 `2026.10.26-r2`。 |
 | 2026-10-26 | 三端补订阅字段类型防御：`listeners` / `tunnels` / `inline payload` 不是数组时不再抛错（此前会因 `for...of` 抛异常导致整份覆写被丢弃）；欧洲识别补奥地利、比利时、捷克、丹麦、葡萄牙、希腊、冰岛、卢森堡 8 个中文国名与 7 个城市名；Bettbox 只对仍存在的脚本组名做节点改名；`profile` 为非对象时不再被对象展开；统一 `RULESET_SIZE_LIMIT` 常量名。三版版本标识统一为 `2026.10.26-r1`。 |
@@ -61,7 +62,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.10.26-r3`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.10.29-r1`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -81,7 +82,7 @@
 
 ### 什么情况下改哪个文件？
 
-- **确认某个域名应直连，但上游分类有误：** 修改 [`rules/direct.list`](./rules/direct.list)。
+- **确认某个域名应直连，但上游分类有误（或该服务会拦截 VPN / 机房出口，例如 Wise）：** 修改 [`rules/direct.list`](./rules/direct.list)。
 - **确认某个域名应代理，但上游分类遗漏：** 修改 [`rules/proxy.list`](./rules/proxy.list)。
 - **确认某个服务需要真实 IP 才能正常工作：** 修改 [`rules/fake-ip-filter.list`](./rules/fake-ip-filter.list)；这只排除 Fake-IP，不改变直连 / 代理去向。
 - **调整策略组、节点识别或 DNS 逻辑：** 修改对应 JS，并运行 [`自动验证`](#自动验证与维护)。共同逻辑的修改应同步到三端。
@@ -94,9 +95,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.26-r3` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.26-r3` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.26-r3` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.29-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.10.29-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.10.29-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -164,7 +165,7 @@ https://raw.githubusercontent.com/skullvek/Mihomo-RouteKit/main/FlClash-mihomoSc
 | 流量类型 | 默认去向 | 说明 |
 | --- | --- | --- |
 | LAN / 中国大陆域名与 IP | `DIRECT` | 国内流量不经过额外“国内直连”策略组 |
-| ChatGPT / Claude / Gemini / NotebookLM | 对应 AI 组 | AI 组只提供代理路径 |
+| ChatGPT / Claude / Gemini / NotebookLM | 对应 AI 组 | AI 组只提供代理路径；首次默认 `全球手动` |
 | Apple CN / Microsoft CN | `DIRECT` | 中国区规则优先于通用服务规则 |
 | Google / GitHub / X / YouTube / Netflix / Telegram / Microsoft / Apple | 对应服务组 | 可手动选择自动、地区、具体节点或 `DIRECT`；前六个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
 | 游戏平台 | `游戏平台` | 三版均覆盖 Steam / Epic / Battle.net / EA / Ubisoft / Riot / Xbox；首次默认 `DIRECT` |
@@ -211,7 +212,7 @@ Bettbox 关闭服务或地区开关后，对应组会动态减少。
 
 ![三端扩展脚本的策略组结构：扩展脚本 → 主界面 25 个策略组（基础 / AI / 国际服务 / 地区聚合），右侧为各组可选项说明](assets/proxy-groups.png)
 
-> 三版脚本结构一致，图中顺序即主界面 01–25 的显示顺序；另有 9 个隐藏地区自动测速组未在图中。`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连，Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组通过 `default-selected: 全球手动` 首次默认选中 `全球手动`。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则同时移除 9 个地区聚合组与 9 个隐藏自动组。
+> 三版脚本结构一致，图中顺序即主界面 01–25 的显示顺序；另有 9 个隐藏地区自动测速组未在图中。`ChatGPT` / `Claude` / `Gemini / NotebookLM` 三个 AI 组与 Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组都通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则同时移除 9 个地区聚合组与 9 个隐藏自动组。
 
 ### 主界面显示顺序（三版一致）
 
@@ -248,6 +249,8 @@ AI 组选项仅包含：
 全球手动
 各地区聚合组
 ```
+
+三个 AI 组通过 `default-selected: 全球手动` 首次默认选中 `全球手动`，与六个服务组的默认值一致；Clash Verge Rev / Bettbox 通过 `profile.store-selected` 保留已有选择，FlClash 由客户端自身保存并恢复。
 
 **不包含 `DIRECT`，也不引用任何可以再切换到 `DIRECT` 的上级策略组。** 这样可避免 AI 服务因持久化选择或上级组设置而间接直连。
 
@@ -433,7 +436,7 @@ Bettbox 中关闭某个服务开关后：
 
 | 文件 | Provider | 用途 |
 | --- | --- | --- |
-| [`rules/direct.list`](./rules/direct.list) | `SKULL_CustomDirect` | 上游误判的国内域名直连；收录 `chatglm.cn`、`cnbeta.com` 与国内统计 / 广告 / 推送后端 |
+| [`rules/direct.list`](./rules/direct.list) | `SKULL_CustomDirect` | 上游误判的国内域名直连；收录 `chatglm.cn`、`cnbeta.com` 与国内统计 / 广告 / 推送后端；另收录必须绕开代理出口的 Wise 汇款域名 |
 | [`rules/proxy.list`](./rules/proxy.list) | `SKULL_CustomProxy` | 国内厂商的国际服务与关联资源例外；覆盖 AI、办公、影音和国际云接口，见下表 |
 | [`rules/fake-ip-filter.list`](./rules/fake-ip-filter.list) | `SKULL_FakeIPFilter` | 追加 Fake-IP 兼容排除；初始为 NTP 与 Microsoft 联网检测 |
 

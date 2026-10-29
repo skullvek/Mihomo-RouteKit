@@ -1,5 +1,5 @@
 // Clash Verge Rev 全局扩展脚本
-// Version: 2026.10.26-r3
+// Version: 2026.10.29-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点）。
 // 用法：订阅 -> 全局扩展脚本（Script）
 
@@ -378,6 +378,11 @@ function main(config, profileName) {
     "全球手动",
     ...REGION_GROUPS
   ];
+  // AI 组首次默认选中「全球手动」，与 README 结构图一致；仍不提供 DIRECT。
+  const aiSelect = (name, icon) => ({
+    ...select(name, icon, AI_OPTIONS),
+    "default-selected": "全球手动"
+  });
 
   // 普通国际服务允许用户显式选择 DIRECT。
   const SERVICE_OPTIONS = [
@@ -448,10 +453,10 @@ function main(config, profileName) {
       "DIRECT"
     ]),
 
-    // 2. AI：强制代理，无 DIRECT
-    select("ChatGPT", ICON.chatgpt, AI_OPTIONS),
-    select("Claude", ICON.claude, AI_OPTIONS),
-    select("Gemini / NotebookLM", ICON.gemini, AI_OPTIONS),
+    // 2. AI：强制代理，无 DIRECT；首次默认「全球手动」
+    aiSelect("ChatGPT", ICON.chatgpt),
+    aiSelect("Claude", ICON.claude),
+    aiSelect("Gemini / NotebookLM", ICON.gemini),
 
     // 3. 常用国际服务
     serviceSelect("Google", ICON.google),

@@ -6,7 +6,7 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 三端版本 | `2026.10.26-r3`（Clash Verge Rev / Bettbox / FlClash） |
+| 三端版本 | `2026.10.29-r1`（Clash Verge Rev / Bettbox / FlClash） |
 | 策略组 | 34（25 可见 + 9 隐藏地区自动组） |
 | 分流规则 | 39 / 41 / 41（CVR / Bettbox / FlClash） |
 | Rule Providers | 34（31 上游 `.mrs` @meta + 3 自维护 `domain/text`） |
@@ -18,6 +18,7 @@
 
 | 日期 | 提交 | 类型 | 内容 | 验证 |
 | --- | --- | --- | --- | --- |
+| 2026-10-29 | `PENDING` | feat | ChatGPT / Claude / Gemini / NotebookLM 三个 AI 组改 `default-selected: 全球手动`（仍无 `DIRECT`）；`rules/direct.list` 补 Wise 域名 `wise.com` / `transferwise.com` / `wise.us` / `wise.jobs` / `wi.se`，业务与 DNS 直连；版本升 `2026.10.29-r1` | `node --check` ×3、`node --test` 62/62、三端默认项打印、mihomo `-t` ×3 |
 | 2026-10-26 | `8700253` | fix | 复核国内识别：`cn.mrs` 11.0 万条（含 `+.cn`），抽查 356 个国内域名仅 `cnbeta.com` 被 `!cn` 误判；`rules/direct.list` 补 `cnbeta.com` / `cnbetacdn.com` 与 11 个国内统计、广告、推送后端；版本升 `2026.10.26-r3` | `node --test` 62/62、`mihomo convert-ruleset` 语法回读、mihomo `-t` ×3 |
 | 2026-10-26 | `8719a0f` | fix | Clash Verge Rev 的 `direct-nameserver-follow-policy` 改为 `true`：直连拨号解析也遵守 `nameserver-policy`（LAN → `system`，AI / 补丁域名跟随各自组），内网主机名不再发往公共 DNS；未命中 policy 的域名仍回落 `direct-nameserver`（国内 DoH）；版本升 `2026.10.26-r2` | `node --check` ×3、`node --test` 62/62、mihomo v1.19.33 `-t` ×3 |
 | 2026-10-26 | `881bdf6` | fix | 三端补字段类型防御：`listeners` / `tunnels` / `inline payload` 非数组时用 `asArray` 兜底，不再因 `for...of` 抛错导致整份覆写被丢弃；欧洲补奥地利/比利时/捷克/丹麦/葡萄牙/希腊/冰岛/卢森堡 8 个中文国名与 7 个城市名；Bettbox 只对仍存在的脚本组名做节点改名；`profile` 非对象不再展开；统一 `RULESET_SIZE_LIMIT`；版本升 `2026.10.26-r1` | `node --check` ×3、`node --test` 62/62、mihomo v1.19.33 `-t` ×3 |
