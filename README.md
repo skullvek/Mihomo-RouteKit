@@ -36,6 +36,7 @@
 | 能力 | 默认行为 |
 | --- | --- |
 | 国内流量 | 中国大陆域名 / IP 与局域网优先 `DIRECT` |
+| 基础分流 | `全球手动` / `自动选择` / `国外流量` / `漏网之鱼` 四个基础组；`国外流量` 首次默认 `全球手动`，`漏网之鱼` 默认落 `国外流量` |
 | AI 服务 | ChatGPT、Claude、Gemini / NotebookLM 独立分流，**不提供 `DIRECT` 路径**；三组首次默认 `全球手动` |
 | 常用国际服务 | Google、GitHub、X、YouTube、Netflix、Telegram、Microsoft、Apple 独立策略组；前六个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
 | 游戏平台 | 三版均独立分流，首次默认 `DIRECT`；Bettbox 可通过可视化开关关闭 |
@@ -51,6 +52,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-10-30 | 基础组 `国外流量` 改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`漏网之鱼` 的首选出口保持 `国外流量`。三版版本标识统一为 `2026.10.30-r2`。 |
 | 2026-10-30 | 地区策略组改为按订阅实际节点动态出现：机场没有某个地区的节点时不再显示该地区聚合组与隐藏自动组，AI 组 / 服务组 / `国外流量` 的选项同步收缩；订阅里存在无法枚举的 `proxy-providers` 远端节点时保留全部 9 个地区组。三版版本标识统一为 `2026.10.30-r1`。 |
 | 2026-10-29 | ChatGPT / Claude / Gemini / NotebookLM 三个 AI 组改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`rules/direct.list` 补入 Wise 汇款域名（`wise.com` / `transferwise.com` / `wise.us` / `wise.jobs` / `wi.se`），业务与 DNS 都直连，不再经 `国外流量`。三版版本标识统一为 `2026.10.29-r1`。 |
 | 2026-10-26 | 复核国内识别：geosite `cn` 已收录 11 万条域名（含全部 `.cn`），抽查 356 个国内主流域名 / App 后端，仅 `cnbeta.com` 被 `geolocation-!cn` 误判为国外走代理；`rules/direct.list` 补入 `cnbeta.com` / `cnbetacdn.com` 与 11 个国内统计、广告、推送后端。三版版本标识统一为 `2026.10.26-r3`。 |
@@ -63,7 +65,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.10.30-r1`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.10.30-r2`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -96,9 +98,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.30-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.30-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.30-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.30-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.10.30-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.10.30-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -213,7 +215,7 @@ flowchart TD
 
 ![三端扩展脚本的策略组结构：扩展脚本 → 主界面最多 25 个策略组（基础 / AI / 国际服务 / 地区聚合，地区组按订阅实际地区出现），右侧为各组可选项说明](assets/proxy-groups.png)
 
-> 三版脚本结构一致，图中顺序即主界面 01–25 的显示顺序；另有最多 9 个隐藏地区自动测速组未在图中。`ChatGPT` / `Claude` / `Gemini / NotebookLM` 三个 AI 组与 Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组都通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则移除全部地区聚合组与对应的隐藏自动组。图中是 9 个地区全部有节点的情形；机场缺少某个地区的节点时该地区聚合组不会出现，主界面组数相应减少。
+> 三版脚本结构一致，图中顺序即主界面 01–25 的显示顺序；另有最多 9 个隐藏地区自动测速组未在图中。基础组 `国外流量`、`ChatGPT` / `Claude` / `Gemini / NotebookLM` 三个 AI 组与 Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组都通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则移除全部地区聚合组与对应的隐藏自动组。图中是 9 个地区全部有节点的情形；机场缺少某个地区的节点时该地区聚合组不会出现，主界面组数相应减少。
 
 ### 主界面显示顺序（三版一致）
 
@@ -232,7 +234,7 @@ flowchart TD
 | --- | --- | --- |
 | `全球手动` | `select` | 手动选择节点；过滤伪节点；内联节点按地区和数字自然排序 |
 | `自动选择` | `url-test` | 全节点自动测速，默认 `600s`、容差 `80ms`、Lazy 模式 |
-| `国外流量` | `select` | 一般国外流量的统一出口，只允许代理路径 |
+| `国外流量` | `select` | 一般国外流量的统一出口，只允许代理路径；首次默认选中 `全球手动` |
 | `漏网之鱼` | `select` | 最终 `MATCH` 落点，默认首选 `国外流量`，同时保留手动 `DIRECT` 兜底 |
 
 国内流量不经过额外的“国内直连”策略组：命中相关规则后直接落到 `DIRECT`。
@@ -869,7 +871,7 @@ GitHub Actions 在 push、pull request 和手动触发时运行：
 
 - 三份 JS 的语法检查，以及合成订阅中的内联节点、provider-only、混合、重名、旧组依赖与拨号循环场景
 - Rule Provider / 策略组 / DNS 引用完整性、下载 URL 结构与本仓库文件映射、规则文件格式及冲突；国际服务域名覆盖、共享父域与国内版的排除边界
-- AI 与国外流量的代理约束、Microsoft / Apple / 游戏平台的 `default-selected: DIRECT`、漏网之鱼默认出口和三端一致性
+- AI 与国外流量的代理约束（`国外流量` 不得含 `DIRECT` 且默认 `全球手动`）、Microsoft / Apple / 游戏平台的 `default-selected: DIRECT`、漏网之鱼默认出口和三端一致性
 - Bettbox 的 13 个单独开关及全部关闭场景；FlClash 的客户端字段保留、NTP、当前仓库补丁与跨端规则一致性；真实 QuickJS 引擎与 Node 的输出对照
 
 本地运行：

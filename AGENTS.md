@@ -39,7 +39,7 @@
 
    | 组 | 类型 | 选项 | 默认 |
    | --- | --- | --- | --- |
-   | `全球手动` / `自动选择` / `国外流量` | `select` / `url-test` / `select` | 无 `DIRECT` | 首位 / 全节点测速 / 首位 |
+   | `全球手动` / `自动选择` / `国外流量` | `select` / `url-test` / `select` | 无 `DIRECT` | 首位 / 全节点测速 / **`default-selected: 全球手动`** |
    | `漏网之鱼` | `select` | `国外流量`→`自动选择`→`全球手动`→`DIRECT` | `国外流量` |
    | AI 三组 | `select` | 自动选择 / 全球手动 / 订阅实际地区的聚合组 | **`default-selected: 全球手动`**，无 `DIRECT` |
    | Google / GitHub / X / YouTube / Netflix / Telegram | `select` | 上述 + `DIRECT` | **`default-selected: 全球手动`** |

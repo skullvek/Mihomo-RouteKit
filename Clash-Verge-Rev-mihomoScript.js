@@ -1,5 +1,5 @@
 // Clash Verge Rev 全局扩展脚本
-// Version: 2026.10.30-r1
+// Version: 2026.10.30-r2
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：订阅 -> 全局扩展脚本（Script）
 
@@ -530,6 +530,12 @@ function main(config, profileName) {
     ...REGION_GROUPS
   ];
 
+  // 「国外流量」首次默认选中「全球手动」，与 AI / 服务组保持一致；仍不提供 DIRECT。
+  const foreignSelect = (name, icon) => ({
+    ...select(name, icon, FOREIGN_OPTIONS),
+    "default-selected": "全球手动"
+  });
+
   config["proxy-groups"] = [
     // 1. 基础策略
     {
@@ -569,7 +575,7 @@ function main(config, profileName) {
       "empty-fallback": "REJECT"
     },
 
-    select("国外流量", ICON.foreign, FOREIGN_OPTIONS),
+    foreignSelect("国外流量", ICON.foreign),
 
     // 未被任何明确规则命中的流量默认交给“国外流量”，但保留 DIRECT 手动兜底。
     select("漏网之鱼", ICON.final, [

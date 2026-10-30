@@ -77,7 +77,7 @@ for (const file of SCRIPTS) {
     for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', '国外流量']) {
       assert.ok(!c['proxy-groups'].find(g => g.name === name).proxies.includes('DIRECT'), name);
     }
-    for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM']) {
+    for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', '国外流量']) {
       assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], '全球手动', name);
     }
     for (const name of ['Microsoft', 'Apple', '游戏平台']) assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], 'DIRECT');
