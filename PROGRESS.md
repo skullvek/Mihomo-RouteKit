@@ -6,18 +6,19 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 三端版本 | `2026.10.29-r1`（Clash Verge Rev / Bettbox / FlClash） |
-| 策略组 | 34（25 可见 + 9 隐藏地区自动组） |
+| 三端版本 | `2026.10.30-r1`（Clash Verge Rev / Bettbox / FlClash） |
+| 策略组 | 16 固定 + 每个有节点的地区 2 组（18–34；9 地区全有 = 25 可见 + 9 隐藏） |
 | 分流规则 | 39 / 41 / 41（CVR / Bettbox / FlClash） |
 | Rule Providers | 34（31 上游 `.mrs` @meta + 3 自维护 `domain/text`） |
-| 回归测试 | `node --test tests/validate.js` → 62 项 |
-| 最近 CI | success — `Validate scripts`，run 40851422547，head `dd17957`（含 `2026.10.29-r1`） |
-| 结构图 | `assets/proxy-groups.png`（README 结构总览，与脚本默认值一致） |
+| 回归测试 | `node --test tests/validate.js` → 65 项 |
+| 最近 CI | 待本次推送后确认（上一次 success：run 40851422547，head `dd17957`） |
+| 结构图 | `assets/proxy-groups.png`（README 结构总览，画的是 9 个地区全有的情形） |
 
 ## 变更记录（新 → 旧）
 
 | 日期 | 提交 | 类型 | 内容 | 验证 |
 | --- | --- | --- | --- | --- |
+| 2026-10-30 | — | feat | 地区策略组按订阅实际节点动态出现：`REGION_AVAILABILITY` 复用地区正则判定节点名，没有节点的地区不再建聚合组与隐藏自动组，AI / 服务组 / `国外流量` 的选项同步收缩；远端 `proxy-providers` 无法枚举时退回全部 9 组；`preserveDependencies` 把旧组对已跳过地区组的引用改指 `国外流量`；版本升 `2026.10.30-r1` | `node --check` ×3、`node --test` 65/65、真实订阅（2 节点单地区 → 18 组 / 59 节点 → 34 组）复算、mihomo v1.19.33 `-t` ×12（合成 + 3 份真实订阅 ×3 端）全 `test is successful`、运行态 `/proxies` 核对地区组成员 |
 | 2026-10-29 | `8502eee` | feat | ChatGPT / Claude / Gemini / NotebookLM 三个 AI 组改 `default-selected: 全球手动`（仍无 `DIRECT`）；`rules/direct.list` 补 Wise 域名 `wise.com` / `transferwise.com` / `wise.us` / `wise.jobs` / `wi.se`，业务与 DNS 直连；版本升 `2026.10.29-r1` | `node --check` ×3、`node --test` 62/62、三端默认项打印、mihomo v1.19.33 `-t` ×3、CI success（run 40851422547，Node 62/62 + QuickJS 44） |
 | 2026-10-26 | `8700253` | fix | 复核国内识别：`cn.mrs` 11.0 万条（含 `+.cn`），抽查 356 个国内域名仅 `cnbeta.com` 被 `!cn` 误判；`rules/direct.list` 补 `cnbeta.com` / `cnbetacdn.com` 与 11 个国内统计、广告、推送后端；版本升 `2026.10.26-r3` | `node --test` 62/62、`mihomo convert-ruleset` 语法回读、mihomo `-t` ×3 |
 | 2026-10-26 | `8719a0f` | fix | Clash Verge Rev 的 `direct-nameserver-follow-policy` 改为 `true`：直连拨号解析也遵守 `nameserver-policy`（LAN → `system`，AI / 补丁域名跟随各自组），内网主机名不再发往公共 DNS；未命中 policy 的域名仍回落 `direct-nameserver`（国内 DoH）；版本升 `2026.10.26-r2` | `node --check` ×3、`node --test` 62/62、mihomo v1.19.33 `-t` ×3 |
@@ -43,11 +44,11 @@
 
 ## 待办 / 已知限制
 
-- [ ] **结构图需人工重绘**：`assets/proxy-groups.png` 是位图，组顺序、默认值或组数变化时必须重画，无法由脚本生成。
+- [ ] **结构图需人工重绘**：`assets/proxy-groups.png` 是位图，组顺序、默认值或组数变化时必须重画，无法由脚本生成；当前图对应「9 个地区全有节点」的情形，单地区机场实际组数更少。
 - [ ] **QuickJS 对照只能靠 CI**：Hermes venv 无 pip，本地跑不了 `tests/quickjs_check.py`；汇报时以 CI 结果为准。
 - [ ] **`RULESET_REF = "meta"` 是可变的**：上游 `meta-rules-dat` 改动会在下一个 `interval`（86400s）静默生效；需要确定性时改固定 tag/SHA，改完必须清一次规则集缓存。
 - [ ] **设备端验证缺口**：真实节点连通性、TUN 严格路由、DNS 泄露、客户端最终覆写行为无法在 CI 覆盖，只能按 README「注意事项」在设备上复核。
-- [ ] **9 个隐藏地区自动组不在结构图中**：README 正文有单独小节，图里只保留 25 个可见组。
+- [ ] **隐藏地区自动组不在结构图中**：README 正文有单独小节，图里只保留可见组。
 - [ ] **Bettbox / FlClash DNS 覆写开关**：用户开启客户端 DNS 覆写会覆盖脚本策略，属已知行为，只能在文档中提示。
 - [ ] **`@meta` 上游规则集体积**：已加 `size-limit: 16 MiB` 兜底，触发即视为上游异常。
 

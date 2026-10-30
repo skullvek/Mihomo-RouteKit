@@ -1,6 +1,6 @@
 // FlClash 扩展脚本（Android / Windows / macOS / Linux）
-// Version: 2026.10.29-r1
-// 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点）。
+// Version: 2026.10.30-r1
+// 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：新建脚本并粘贴全文；当前订阅 -> 扩展/覆写 -> 脚本，选中本脚本。
 // 在客户端使用规则模式，关闭 DNS 覆写及“追加系统 DNS”；TUN/VPN 由 FlClash 管理。
 
@@ -40,6 +40,11 @@ function main(config) {
   const issues = [];
   const report = (message) => {
     issues.push(message);
+    console.error(`[SKULL] ${message}`);
+  };
+
+  // 提示性日志：只打到 console，不计入 issues（issues 只统计被降级处理的异常）。
+  const note = (message) => {
     console.error(`[SKULL] ${message}`);
   };
 
@@ -180,6 +185,108 @@ function main(config) {
     `(?i)(${PSEUDO_PATTERN_BODY}|${regionPatternList.join("|")})`;
 
   const PSEUDO_NODE_RE = new RegExp(`(?:${PSEUDO_PATTERN_BODY})`, "i");
+
+  // ---------- 2.1 地区可用性 ----------
+  // 机场只卖部分地区时，空的地区组照样占位，切过去等于断网。
+  // 这里按节点名判断“这个地区到底有没有节点”，只给有节点的地区建组。
+  // provider 远端节点在扩展脚本阶段枚举不到：只要有一处无法确认就退回“全部保留”，
+  // 宁可多显示一个空组，也不误删有节点的地区。
+  const patternMatches = (pattern, name) => {
+    if (typeof pattern !== "string" || !pattern || typeof name !== "string") {
+      return false;
+    }
+    const flags = pattern.indexOf("(?i)") === 0 ? "i" : "";
+    const body = flags ? pattern.slice(4) : pattern;
+    // 内核允许用反引号分隔多个正则，任一命中即算匹配。
+    const parts = body.split("`");
+    for (let i = 0; i < parts.length; i += 1) {
+      if (!parts[i]) continue;
+      try {
+        if (new RegExp(parts[i], flags).test(name)) return true;
+      } catch (_) {
+        // 无法编译的模式不参与判断，避免误判让整组消失。
+      }
+    }
+    return false;
+  };
+
+  // 与内核 filter / exclude-filter 同语义：先看 filter，再看 exclude-filter。
+  const nodeInGroup = (name, filter, excludeFilter) =>
+    patternMatches(filter, name) && !patternMatches(excludeFilter, name);
+
+  const providerAccepts = (name, provider) =>
+    (!provider.filter || patternMatches(provider.filter, name)) &&
+    !patternMatches(provider["exclude-filter"], name);
+
+  // 脚本能确认名称的节点：静态 proxies + 内联 provider payload。
+  // complete=false 表示还有远端 provider，节点名要等内核加载后才知道。
+  const collectKnownNodes = () => {
+    const names = [];
+    const statics = Array.isArray(config.proxies) ? config.proxies : [];
+    for (const proxy of statics) {
+      if (!isProxyCandidate(proxy)) continue;
+      if (typeof proxy.name !== "string" || !proxy.name) continue;
+      if (PSEUDO_NODE_RE.test(proxy.name)) continue;
+      names.push(proxy.name);
+    }
+
+    let complete = true;
+    for (const providerName of providerNames) {
+      const provider = providers[providerName];
+      if (!provider || typeof provider !== "object" || Array.isArray(provider)) {
+        complete = false;
+        continue;
+      }
+      const override =
+        provider.override &&
+        typeof provider.override === "object" &&
+        !Array.isArray(provider.override)
+          ? provider.override
+          : {};
+      const payload = Array.isArray(provider.payload) ? provider.payload : null;
+      // 正则改名与表达式覆写会让最终节点名不可预测，只能当作未知。
+      if (
+        !payload ||
+        (override["proxy-name"] || []).length > 0 ||
+        (override["override-expr"] || []).length > 0
+      ) {
+        complete = false;
+        continue;
+      }
+      const prefix = override["additional-prefix"] || "";
+      const suffix = override["additional-suffix"] || "";
+      for (const proxy of payload) {
+        if (!isProxyCandidate(proxy)) continue;
+        if (typeof proxy.name !== "string" || !proxy.name) continue;
+        const name = `${prefix}${proxy.name}${suffix}`;
+        if (PSEUDO_NODE_RE.test(name)) continue;
+        // provider 自身的 filter / exclude-filter 决定它到底暴露哪些节点。
+        if (!providerAccepts(name, provider)) continue;
+        names.push(name);
+      }
+    }
+    return { names, complete };
+  };
+
+  const REGION_AVAILABILITY = (() => {
+    const known = collectKnownNodes();
+    if (!known.complete) {
+      return { unknown: true, keys: REGION_KEYS.slice(), other: true };
+    }
+    const keys = [];
+    for (const key of REGION_KEYS) {
+      if (known.names.some((name) => nodeInGroup(name, FILTER[key], REGION_EXCLUDE[key]))) {
+        keys.push(key);
+      }
+    }
+    const other = known.names.some((name) => {
+      for (const key of REGION_KEYS) {
+        if (patternMatches(REGION_PATTERN_BODY[key], name)) return false;
+      }
+      return true;
+    });
+    return { unknown: false, keys, other };
+  })();
 
   const manualRegionRank = (name) => {
     for (let i = 0; i < MANUAL_REGION_TESTS.length; i += 1) {
@@ -333,17 +440,36 @@ function main(config) {
   });
 
   // ---------- 4. 策略组 ----------
-  const REGION_GROUPS = [
-    "香港聚合",
-    "澳门聚合",
-    "台湾聚合",
-    "新加坡聚合",
-    "韩国聚合",
-    "日本聚合",
-    "美国聚合",
-    "欧洲聚合",
-    "其他地区"
+  // 地区描述表：顺序即主界面顺序，也是 AI / 服务组 / 国外流量 的选项来源。
+  // 只有订阅里真的存在节点的地区才进入 ACTIVE_REGIONS（判定见 2.1）。
+  const REGION_DEFS = [
+    { key: "hk", aggregate: "香港聚合", auto: "香港自动", icon: ICON.hk, filter: FILTER.hk, exclude: REGION_EXCLUDE.hk },
+    { key: "mo", aggregate: "澳门聚合", auto: "澳门自动", icon: ICON.mo, filter: FILTER.mo, exclude: REGION_EXCLUDE.mo },
+    { key: "tw", aggregate: "台湾聚合", auto: "台湾自动", icon: ICON.tw, filter: FILTER.tw, exclude: REGION_EXCLUDE.tw },
+    { key: "sg", aggregate: "新加坡聚合", auto: "新加坡自动", icon: ICON.sg, filter: FILTER.sg, exclude: REGION_EXCLUDE.sg },
+    { key: "kr", aggregate: "韩国聚合", auto: "韩国自动", icon: ICON.kr, filter: FILTER.kr, exclude: REGION_EXCLUDE.kr },
+    { key: "jp", aggregate: "日本聚合", auto: "日本自动", icon: ICON.jp, filter: FILTER.jp, exclude: REGION_EXCLUDE.jp },
+    { key: "us", aggregate: "美国聚合", auto: "美国自动", icon: ICON.us, filter: FILTER.us, exclude: REGION_EXCLUDE.us },
+    { key: "eu", aggregate: "欧洲聚合", auto: "欧洲自动", icon: ICON.eu, filter: FILTER.eu, exclude: REGION_EXCLUDE.eu },
+    { key: "other", aggregate: "其他地区", auto: "其他自动", icon: ICON.other, filter: "(?i)^.*$", exclude: OTHER_EXCLUDE }
   ];
+
+  const regionEnabled = (region) =>
+    region.key === "other"
+      ? REGION_AVAILABILITY.other
+      : REGION_AVAILABILITY.keys.indexOf(region.key) >= 0;
+
+  const ACTIVE_REGIONS = REGION_DEFS.filter(regionEnabled);
+  const REGION_GROUPS = ACTIVE_REGIONS.map((region) => region.aggregate);
+
+  if (!REGION_AVAILABILITY.unknown) {
+    const skippedRegions = REGION_DEFS.filter((region) => !regionEnabled(region));
+    if (skippedRegions.length > 0) {
+      note(
+        `订阅里没有这些地区的节点，已跳过对应策略组：${skippedRegions.map((region) => region.aggregate).join("、")}；当前保留：${REGION_GROUPS.join("、") || "无"}`
+      );
+    }
+  }
 
   // AI 不提供 DIRECT，也不引用任何可以切到 DIRECT 的上级组。
   const AI_OPTIONS = [
@@ -443,27 +569,16 @@ function main(config) {
     serviceSelect("Apple", ICON.apple, "DIRECT"),
     serviceSelect("游戏平台", ICON.games, "DIRECT"),
 
-    // 7. 地区聚合：自动测速 + 本地区全部节点
-    regionAggregate("香港聚合", "香港自动", ICON.hk, FILTER.hk, REGION_EXCLUDE.hk),
-    regionAggregate("澳门聚合", "澳门自动", ICON.mo, FILTER.mo, REGION_EXCLUDE.mo),
-    regionAggregate("台湾聚合", "台湾自动", ICON.tw, FILTER.tw, REGION_EXCLUDE.tw),
-    regionAggregate("新加坡聚合", "新加坡自动", ICON.sg, FILTER.sg, REGION_EXCLUDE.sg),
-    regionAggregate("韩国聚合", "韩国自动", ICON.kr, FILTER.kr, REGION_EXCLUDE.kr),
-    regionAggregate("日本聚合", "日本自动", ICON.jp, FILTER.jp, REGION_EXCLUDE.jp),
-    regionAggregate("美国聚合", "美国自动", ICON.us, FILTER.us, REGION_EXCLUDE.us),
-    regionAggregate("欧洲聚合", "欧洲自动", ICON.eu, FILTER.eu, REGION_EXCLUDE.eu),
-    regionAggregate("其他地区", "其他自动", ICON.other, "(?i)^.*$", OTHER_EXCLUDE),
+    // 4. 地区聚合：聚合组 = 地区自动测速 + 该地区全部节点
+    //    只有订阅里存在节点的地区才建组，空地区不再占用主界面。
+    ...ACTIVE_REGIONS.map((region) =>
+      regionAggregate(region.aggregate, region.auto, region.icon, region.filter, region.exclude)
+    ),
 
-    // 8. 隐藏地区自动测速子组
-    regionAuto("香港自动", ICON.hk, FILTER.hk, REGION_EXCLUDE.hk),
-    regionAuto("澳门自动", ICON.mo, FILTER.mo, REGION_EXCLUDE.mo),
-    regionAuto("台湾自动", ICON.tw, FILTER.tw, REGION_EXCLUDE.tw),
-    regionAuto("新加坡自动", ICON.sg, FILTER.sg, REGION_EXCLUDE.sg),
-    regionAuto("韩国自动", ICON.kr, FILTER.kr, REGION_EXCLUDE.kr),
-    regionAuto("日本自动", ICON.jp, FILTER.jp, REGION_EXCLUDE.jp),
-    regionAuto("美国自动", ICON.us, FILTER.us, REGION_EXCLUDE.us),
-    regionAuto("欧洲自动", ICON.eu, FILTER.eu, REGION_EXCLUDE.eu),
-    regionAuto("其他自动", ICON.other, "(?i)^.*$", OTHER_EXCLUDE)
+    // 5. 地区自动测速子组
+    ...ACTIVE_REGIONS.map((region) =>
+      regionAuto(region.auto, region.icon, region.filter, region.exclude)
+    )
   ];
 
   // 依赖修复只保留实际引用的旧组，避免与脚本组重名。
@@ -523,6 +638,13 @@ function main(config) {
     const reservedNames = new Set(reservedGroupNames);
     const newNames = new Set(activeGroupNames);
     const builtins = new Set(["DIRECT", "REJECT", "REJECT-DROP", "PASS", "COMPATIBLE", "GLOBAL"]);
+    // 订阅里没有的地区组（以及 Bettbox 关闭「地区分组」后）不会出现在新配置里：
+    // 旧配置对它们的引用必须改指「国外流量」，否则内核会因悬空引用拒绝整份配置。
+    const missingRegionNames = new Set();
+    for (const region of REGION_DEFS) {
+      if (!newNames.has(region.aggregate)) missingRegionNames.add(region.aggregate);
+      if (!newNames.has(region.auto)) missingRegionNames.add(region.auto);
+    }
     // 别名避开全部原名，包括尚未访问的旧组与已关闭的服务组。
     const originalProxies = Array.isArray(config.proxies) ? config.proxies : [];
     const used = new Set([
@@ -574,6 +696,10 @@ function main(config) {
         report(`原配置中存在重复策略组「${group.name}」，已跳过重复项`);
         continue;
       }
+      if (missingRegionNames.has(group.name)) {
+        report(`原配置策略组「${group.name}」属于已跳过的地区，未保留`);
+        continue;
+      }
       if (builtins.has(group.name)) {
         report(`原配置策略组「${group.name}」与内置策略重名，已跳过`);
         continue;
@@ -591,6 +717,7 @@ function main(config) {
       old.set(group.name, group);
     }
     const renamed = new Map();
+    const droppedReported = new Set();
     const aliases = new Set();
     const visiting = new Set();
     const retained = [];
@@ -602,6 +729,14 @@ function main(config) {
       if (preAlias.has(name)) name = preAlias.get(name);
       // 仅转换原配置引用；自建规则集下载策略在下方独立保留。
       if (!old.has(name) && nodeAliases.has(name)) name = nodeAliases.get(name);
+      // 已跳过的地区组不存在了：旧引用改指「国外流量」，避免落到 REJECT 断流。
+      if (missingRegionNames.has(name)) {
+        if (!droppedReported.has(name)) {
+          droppedReported.add(name);
+          report(`原配置引用了当前订阅没有节点的地区组「${name}」，已改指「国外流量」`);
+        }
+        return "国外流量";
+      }
       if (visiting.has(name)) {
         report(`代理依赖存在循环：${name}，已切断该引用`);
         return "REJECT";
@@ -619,7 +754,7 @@ function main(config) {
         if (Array.isArray(copy.proxies)) copy.proxies = copy.proxies.map(resolve);
         // default-selected 失效时由内核回退；只改写实际指向旧组的默认项。
         const defaultSelected = copy["default-selected"];
-        if (preAlias.has(defaultSelected) || old.has(defaultSelected) || nodeAliases.has(defaultSelected)) {
+        if (preAlias.has(defaultSelected) || old.has(defaultSelected) || nodeAliases.has(defaultSelected) || missingRegionNames.has(defaultSelected)) {
           copy["default-selected"] = resolve(defaultSelected);
         }
         visiting.delete(name);

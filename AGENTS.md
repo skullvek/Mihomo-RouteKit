@@ -10,7 +10,7 @@
 
 脚本保留订阅里的 `proxies` / `proxy-providers`，**重建**主策略组、分流规则、Rule Providers 和整段 DNS。因此换机场通常不用改脚本。
 
-每次执行产出：**34 个策略组**（25 可见 + 9 隐藏地区 `url-test`）、**34 个 `SKULL_*` Rule Provider**（31 个上游 `.mrs` 经 jsDelivr `@meta` + 3 个自维护 `domain/text` 经 Raw）、**39 / 41 / 41 条规则**、完整 `dns` 段。
+每次执行产出：**16 个固定主策略组 + 每个「订阅里真的有节点」的地区 2 组**（可见聚合组 + 隐藏 `url-test`；9 个地区全有时共 34 组，单地区机场 18 组）、**34 个 `SKULL_*` Rule Provider**（31 个上游 `.mrs` 经 jsDelivr `@meta` + 3 个自维护 `domain/text` 经 Raw）、**39 / 41 / 41 条规则**、完整 `dns` 段。
 
 ## 2. 目录地图
 
@@ -22,7 +22,7 @@
 | `rules/direct.list` | `SKULL_CustomDirect`，先于 CN 分类直连 | 只写域名，一行一个 |
 | `rules/proxy.list` | `SKULL_CustomProxy`，先于 CN 分类走 `国外流量` | 同上 |
 | `rules/fake-ip-filter.list` | `SKULL_FakeIPFilter`，仅排除 Fake-IP | 不改变直连/代理去向 |
-| `tests/validate.js` | `node --test` 回归（53 项） | 契约、开关组合、三端一致性、规则文件格式 |
+| `tests/validate.js` | `node --test` 回归（65 项） | 契约、开关组合、地区裁剪、三端一致性、规则文件格式 |
 | `tests/fixtures/*.json` | 5 份合成订阅 | 全部假数据，**不得写入真实订阅** |
 | `tests/engine-cases.js` + `tests/quickjs_check.py` | Node ↔ 真实 QuickJS 对照 | 只在 CI 跑（本地通常没有 `quickjs`） |
 | `.github/workflows/validate.yml` | push / PR / 手动触发 | 语法 → 测试 → QuickJS |
@@ -41,11 +41,11 @@
    | --- | --- | --- | --- |
    | `全球手动` / `自动选择` / `国外流量` | `select` / `url-test` / `select` | 无 `DIRECT` | 首位 / 全节点测速 / 首位 |
    | `漏网之鱼` | `select` | `国外流量`→`自动选择`→`全球手动`→`DIRECT` | `国外流量` |
-   | AI 三组 | `select` | 自动选择 / 全球手动 / 9 个地区聚合 | **`default-selected: 全球手动`**，无 `DIRECT` |
+   | AI 三组 | `select` | 自动选择 / 全球手动 / 订阅实际地区的聚合组 | **`default-selected: 全球手动`**，无 `DIRECT` |
    | Google / GitHub / X / YouTube / Netflix / Telegram | `select` | 上述 + `DIRECT` | **`default-selected: 全球手动`** |
    | Microsoft / Apple / 游戏平台 | `select` | 同上 | **`default-selected: DIRECT`** |
-   | 地区聚合 ×9 | `select` | 该地区隐藏自动组 + 该地区全部节点 | 首位 |
-   | 地区自动 ×9 | `url-test` | `hidden: true`，只供聚合组调用 | — |
+   | 地区聚合 1–9 | `select` | 该地区隐藏自动组 + 该地区全部节点；**订阅里没有该地区节点时不建组** | 首位 |
+   | 地区自动 1–9 | `url-test` | `hidden: true`，只供聚合组调用；与聚合组一一对应 | — |
 
    `default-selected` 是字符串成员名；`select` 组没有它就从选项第一项开始。改动默认值时必须在 `tests/validate.js` 的 `core design contracts` 里加断言。
 5. **规则顺序固定**（命中即停）：
@@ -71,7 +71,8 @@
 - **某服务需要真实 IP** → `rules/fake-ip-filter.list`（只影响 Fake-IP，不改去向）。
 - **策略组结构、默认值、节点识别、DNS、TUN** → 三份脚本 + `tests/validate.js` + README + 结构图。
 - **新增服务组**：三份脚本同时加组与规则（注意规则位置）、`Bettbox` 的 `ruleOptionsEnable` / `serviceConfigs`、测试断言、README 的组顺序表与结构图。
-- **Bettbox 开关**：`featureEnabled` / `serviceTarget` 负责删组并把相关规则回落 `国外流量`；`地区分组` 开关会同时删 9 个聚合组与 9 个隐藏自动组。
+- **Bettbox 开关**：`featureEnabled` / `serviceTarget` 负责删组并把相关规则回落 `国外流量`；`地区分组` 开关会删掉全部聚合组与对应的隐藏自动组。
+- **地区组按订阅动态出现**：`REGION_AVAILABILITY`（2.1 节，复用 `FILTER` / `REGION_EXCLUDE` 判定节点名）→ `REGION_DEFS` / `ACTIVE_REGIONS`（4 节）→ 组列表用 `...ACTIVE_REGIONS.map(...)` 展开；`preserveDependencies` 里的 `missingRegionNames` 负责把旧组对已跳过地区组的引用改指 `国外流量`。改判定逻辑要同步三份脚本，并在 `tests/validate.js` 的 `region groups follow the subscription` 里补断言。
 
 ## 5. README 同步点
 
@@ -93,6 +94,9 @@ node --check Clash-Verge-Rev-mihomoScript.js
 node --check Bettbox-mihomoScript.js
 node --check FlClash-mihomoScript.js
 node --test tests/validate.js
+
+# 打印每个 fixture 实际建出的地区组，确认裁剪逻辑
+node -e 'const {execute,SCRIPTS,fixture}=require("./tests/helpers");for(const f of SCRIPTS){for(const n of ["direct-proxies","provider-only","mixed-provider"]){const c=execute(f,fixture(n));console.log(f,n,c["proxy-groups"].length,c["proxy-groups"].map(g=>g.name).filter(x=>/聚合$|^其他地区$/.test(x)).join(","));}}'
 
 # 打印三端实际生效的默认项，别只看代码
 node -e 'const {execute,SCRIPTS}=require("./tests/helpers");for(const f of SCRIPTS){const c=execute(f,require("./tests/fixtures/direct-proxies.json"));console.log(f,c["proxy-groups"].filter(g=>g["default-selected"]).map(g=>g.name+"="+g["default-selected"]).join(", "));}'
@@ -118,6 +122,7 @@ node -e 'const {execute,SCRIPTS}=require("./tests/helpers");for(const f of SCRIP
 - **Mermaid 10 与 11 的布局宽度不同**：GitHub 用 10.x，本地验证要以 10.9.1 为准；宽度尽量压在 950px 以内，否则被缩成小字。
 - **GitHub 的 Mermaid 在跨域 iframe 里渲染**：页面 DOM 查不到图内 `<svg>` 是正常的，判断标准是 `iframe[src*="markdown/mermaid"]` 的数量。
 - **客户端会在脚本之后回写自己的设置**：`mode`、`unified-delay`、顶层 `ipv6`、`find-process-mode`、TUN 全部以 App 为准，脚本里写了也可能被覆盖——不要承诺「脚本已强制」。
+- **别写死 34 组**：地区组数量由订阅节点决定——`direct-proxies.json` 只有香港 / 美国 → 20 组，`provider-only.json` 只有 NRT → 18 组，`mixed-provider.json` 是新加坡 + 台湾 → 20 组。断言组数前先看 fixture 里到底有哪些地区；只有「无法枚举的远端 provider」才会退回 9 个地区全保留。
 - **Bettbox / FlClash 的 DNS 覆写**：客户端一旦开启 DNS 覆写，脚本的 `nameserver-policy`、`direct-nameserver` 会被重新生成覆盖，README 已要求用户关闭，排查问题时先问这一项。
 
 ## 9. 不要做的事

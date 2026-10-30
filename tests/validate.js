@@ -66,7 +66,14 @@ for (const file of SCRIPTS) {
   });
   test(`${file}: core design contracts`, () => {
     const c = execute(file, fixture('direct-proxies'));
-    assert.equal(c['proxy-groups'].length, 34);
+    // 香港 + 美国 两个地区：4 基础 + 3 AI + 9 服务 + 2 聚合 + 2 隐藏自动 = 20。
+    assert.equal(c['proxy-groups'].length, 20);
+    const regionNames = c['proxy-groups'].map(g => g.name).filter(name => /聚合$|^其他地区$/.test(name));
+    assert.deepEqual(regionNames, ['香港聚合', '美国聚合']);
+    for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', 'Google', 'GitHub', 'Microsoft', 'Apple', 'Telegram', 'X', 'YouTube', 'Netflix', '游戏平台', '国外流量']) {
+      const options = c['proxy-groups'].find(g => g.name === name).proxies;
+      assert.deepEqual(options.filter(option => /聚合$|^其他地区$/.test(option)), ['香港聚合', '美国聚合'], name);
+    }
     for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', '国外流量']) {
       assert.ok(!c['proxy-groups'].find(g => g.name === name).proxies.includes('DIRECT'), name);
     }
@@ -86,7 +93,10 @@ for (const file of SCRIPTS) {
     assert.ok(c.dns['direct-nameserver'].every(url => url.endsWith('#DIRECT')));
   });
   test(`${file}: airport tokens classified once with letter boundaries`, () => {
-    const c = execute(file, fixture('provider-only'));
+    // 9 个地区各放一个节点，保证 9 个地区组都存在，再用组自身的 filter 反查分类结果。
+    const seed = ['香港01', '澳门01', '台湾01', '新加坡01', '韩国01', '日本01', '美国01', '英国01', '土耳其01']
+      .map(name => ({name, type: 'ss'}));
+    const c = execute(file, {proxies: seed});
     const groups = c['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name));
     for (const [code, region] of airports) {
       for (const name of [code + ' Premium 01', '线路-' + code.toLowerCase() + '02']) {
@@ -133,7 +143,10 @@ for (const file of SCRIPTS) {
       }
       const automatic = c['proxy-groups'].find(g => g.name === '自动选择');
       for (const name of real) assert.ok(matches(automatic, name), `${source}: keep ${name}`);
-      assert.ok(matches(c['proxy-groups'].find(g => g.name === '其他地区'), real[0]), 'Turkey route remains selectable');
+      // 其他地区 只在订阅里存在无法归类的节点时出现；provider-only 合成订阅只有 NRT。
+      const other = c['proxy-groups'].find(g => g.name === '其他地区');
+      if (source === 'provider') assert.equal(other, undefined, `${source}: no unclassified node, no 其他地区`);
+      else assert.ok(matches(other, real[0]), 'Turkey route remains selectable');
     }
   });
   test(`${file}: custom patches preserve LAN and AI priority`, () => {
@@ -185,7 +198,9 @@ for (const file of SCRIPTS) {
     assert.doesNotThrow(() => execute(file, input));
   });
   test(`${file}: Europe matches Chinese country and city names`, () => {
-    const c = execute(file, fixture('provider-only'));
+    const seed = ['香港01', '澳门01', '台湾01', '新加坡01', '韩国01', '日本01', '美国01', '英国01', '土耳其01']
+      .map(name => ({name, type: 'ss'}));
+    const c = execute(file, {proxies: seed});
     const groups = c['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name));
     const europe = ['丹麦 哥本哈根 01', '捷克 布拉格', '奥地利 维也纳', '比利时 布鲁塞尔', '葡萄牙 里斯本', '希腊 雅典', '冰岛 雷克雅未克', '卢森堡 01'];
     for (const name of europe) {
@@ -193,6 +208,35 @@ for (const file of SCRIPTS) {
     }
     // Countries without any flag / airport-code coverage are a product decision; they stay 其他地区.
     assert.deepEqual(groups.filter(g => matches(g, '匈牙利 布达佩斯')).map(g => g.name), ['其他地区']);
+  });
+  test(`${file}: region groups follow the subscription`, () => {
+    // 只有新加坡节点的机场：只建新加坡聚合，其余地区组与 其他地区 都不出现。
+    const sg = execute(file, {proxies: ['🇸🇬 新加坡 原生 01', 'SIN IEPL 02'].map(name => ({name, type: 'ss'}))});
+    assert.deepEqual(sg['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name)).map(g => g.name), ['新加坡聚合']);
+    assert.ok(sg['proxy-groups'].some(g => g.name === '新加坡自动'), 'hidden auto group follows its aggregate');
+    assert.ok(!sg['proxy-groups'].some(g => /^(?:香港|澳门|台湾|韩国|日本|美国|欧洲|其他)/.test(g.name)), 'no empty region groups');
+    assert.equal(sg['proxy-groups'].length, 18);
+    references(sg);
+
+    // 只有无法归类的节点（土耳其）：只建 其他地区。
+    const tr = execute(file, {proxies: [{name: '🇹🇷 土耳其 01', type: 'ss'}]});
+    assert.deepEqual(tr['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name)).map(g => g.name), ['其他地区']);
+    references(tr);
+
+    // 远端 provider 的节点名枚举不到：保留全部 9 个地区组，不凭猜测删组。
+    const remote = {proxies: [], 'proxy-providers': {airport: {type: 'http', url: 'https://example.com/sub.yaml', path: './providers/airport.yaml'}}};
+    const unknown = execute(file, remote);
+    assert.equal(unknown['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name)).length, 9);
+    assert.equal(unknown['proxy-groups'].length, 34);
+
+    // 旧配置引用了被跳过的地区组：改指 国外流量，不留悬空引用。
+    const stale = {
+      proxies: [{name: '香港01', type: 'ss'}, {name: '美国01', type: 'ss', 'dialer-proxy': '旧机场组'}],
+      'proxy-groups': [{name: '旧机场组', type: 'select', proxies: ['香港聚合', '日本聚合', 'DIRECT']}]
+    };
+    const out = execute(file, stale);
+    assert.deepEqual(out['proxy-groups'].find(g => g.name === '旧机场组').proxies, ['香港聚合', '国外流量', 'DIRECT']);
+    references(out);
   });
   test(`${file}: non-object profile is replaced instead of spread`, () => {
     const c = execute(file, {...fixture('direct-proxies'), profile: 'oops'});

@@ -39,7 +39,7 @@
 | AI 服务 | ChatGPT、Claude、Gemini / NotebookLM 独立分流，**不提供 `DIRECT` 路径**；三组首次默认 `全球手动` |
 | 常用国际服务 | Google、GitHub、X、YouTube、Netflix、Telegram、Microsoft、Apple 独立策略组；前六个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
 | 游戏平台 | 三版均独立分流，首次默认 `DIRECT`；Bettbox 可通过可视化开关关闭 |
-| 地区节点 | 香港、澳门、台湾、新加坡、韩国、日本、美国、欧洲、其他地区；同时支持自动测速与手动选择 |
+| 地区节点 | 香港、澳门、台湾、新加坡、韩国、日本、美国、欧洲、其他地区；同时支持自动测速与手动选择，且**只给订阅里实际存在节点的地区建组** |
 | 节点整理 | 过滤公告 / 流量提示等伪节点；内联节点按地区 + 数字自然排序 |
 | Provider | 自动补齐缺失的 health-check 参数，同时尊重机场显式关闭的健康检查 |
 | DNS | 国内查询直连；默认国外查询经 `国外流量`；提供独立 `direct-nameserver` |
@@ -51,6 +51,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-10-30 | 地区策略组改为按订阅实际节点动态出现：机场没有某个地区的节点时不再显示该地区聚合组与隐藏自动组，AI 组 / 服务组 / `国外流量` 的选项同步收缩；订阅里存在无法枚举的 `proxy-providers` 远端节点时保留全部 9 个地区组。三版版本标识统一为 `2026.10.30-r1`。 |
 | 2026-10-29 | ChatGPT / Claude / Gemini / NotebookLM 三个 AI 组改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`rules/direct.list` 补入 Wise 汇款域名（`wise.com` / `transferwise.com` / `wise.us` / `wise.jobs` / `wi.se`），业务与 DNS 都直连，不再经 `国外流量`。三版版本标识统一为 `2026.10.29-r1`。 |
 | 2026-10-26 | 复核国内识别：geosite `cn` 已收录 11 万条域名（含全部 `.cn`），抽查 356 个国内主流域名 / App 后端，仅 `cnbeta.com` 被 `geolocation-!cn` 误判为国外走代理；`rules/direct.list` 补入 `cnbeta.com` / `cnbetacdn.com` 与 11 个国内统计、广告、推送后端。三版版本标识统一为 `2026.10.26-r3`。 |
 | 2026-10-26 | Clash Verge Rev 的 `direct-nameserver-follow-policy` 改为 `true`：直连拨号解析也遵守 `nameserver-policy`，LAN / 私有域名走系统 DNS，内网主机名不再被发往公共 DNS；未命中 policy 的直连域名仍回落 `direct-nameserver`（国内 DoH）。三版版本标识统一为 `2026.10.26-r2`。 |
@@ -62,7 +63,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.10.29-r1`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.10.30-r1`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -95,9 +96,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.29-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.29-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.29-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.30-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.10.30-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.10.30-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -140,7 +141,7 @@
 5. 导入完成后，返回该订阅的扩展页面，**选中刚保存的脚本**，确认其显示选中状态，再返回并重新应用配置。只保存脚本、未绑定订阅不会生效。
 6. 检查 **DNS 字段覆写**：v0.9.0 起已移除旧的 DNS 总覆写开关，改为按选中字段应用；要完整采用脚本的 DNS 策略，应取消客户端中已选的 DNS 覆写字段，避免重写上游、policy、fallback 与 Fake-IP 设置。这里是取消字段覆写，**保留脚本生成的 `dns.enable: true`**。旧版仍有 DNS 覆写总开关时，关闭该覆写开关。
 7. 在 **进阶配置 → 网络** 中关闭 **追加系统 DNS**；否则 FlClash 会在脚本之后把 `system://` 加入默认 `nameserver`，使国外域名也可能通过系统 DNS 查询。LAN 专用的 `system` policy 保留，服务于局域网解析。
-8. 代理页应显示 25 个主策略组，另有 9 个隐藏地区测速组；首次加载检查 Google、GitHub、X、YouTube、Netflix、Telegram 是否选中 `全球手动`，Microsoft、Apple、游戏平台是否选中 `DIRECT`。若当前订阅已经保存过选择，客户端会优先恢复它。
+8. 代理页应显示 16 个固定主策略组（基础 / AI / 服务），外加订阅里实际存在节点的地区聚合组（最多 9 个），每个地区聚合组对应一个隐藏地区测速组；首次加载检查 Google、GitHub、X、YouTube、Netflix、Telegram 是否选中 `全球手动`，Microsoft、Apple、游戏平台是否选中 `DIRECT`。若当前订阅已经保存过选择，客户端会优先恢复它。
 
 FlClash 不读取 Bettbox 的 13 个可视化开关，因此此版本固定启用全部服务组和地区组。TUN / Android VPN、运行模式、顶层 IPv6 与进程识别由客户端设置控制；没有完整 IPv6 代理链路时，在 App 中关闭 IPv6。桌面 TUN 的严格路由请在客户端中设置并检查最终配置。
 
@@ -179,7 +180,7 @@ https://raw.githubusercontent.com/skullvek/Mihomo-RouteKit/main/FlClash-mihomoSc
 ```mermaid
 flowchart TD
     A[机场订阅] --> B[三端覆写脚本]
-    B --> C[34 个策略组]
+    B --> C[策略组：16 固定 + 地区组]
     B --> D[39 / 41 / 41 条路由规则]
     E[31 个上游规则集] --> D
     F[3 个自维护补丁] --> D
@@ -190,19 +191,19 @@ flowchart TD
     C --> H
 ```
 
-> 三版脚本均定义 34 个策略组。若订阅节点、provider、listener、tunnel、NTP 或 Rule Provider 仍引用旧策略组，脚本会额外保留必要旧组并设置为隐藏，因此最终组数可能更高。
+> 三版脚本固定定义 16 个主策略组（基础 4 + AI 3 + 服务 9），并为订阅里**实际存在节点**的每个地区各建 2 组（可见聚合组 + 隐藏自动组）：9 个地区都有节点时共 34 组，只有 1 个地区的机场只有 18 组。若订阅节点、provider、listener、tunnel、NTP 或 Rule Provider 仍引用旧策略组，脚本会额外保留必要旧组并设置为隐藏，因此最终组数可能更高。
 
 ### 默认配置规模
 
 | 项目 | Clash Verge Rev | Bettbox（全部开关启用） | FlClash |
 | --- | ---: | ---: | ---: |
-| 脚本定义策略组 | **34** | **34** | **34** |
-| 主界面可见组 | **25** | **25** | **25** |
-| 隐藏地区测速组 | **9** | **9** | **9** |
+| 脚本定义策略组 | **18–34**（按订阅地区数） | **18–34** | **18–34** |
+| 主界面可见组 | **16–25** | **16–25** | **16–25** |
+| 隐藏地区测速组 | **1–9** | **1–9** | **1–9** |
 | 分流规则 | **39** | **41** | **41** |
 | Rule Providers | **34** | **34** | **34** |
 
-Bettbox 关闭服务或地区开关后，对应组会动态减少。
+订阅里没有节点的地区不会建组，Bettbox 关闭服务或地区开关后对应组也会减少，因此实际组数按上表的区间变化。
 
 ---
 
@@ -210,9 +211,9 @@ Bettbox 关闭服务或地区开关后，对应组会动态减少。
 
 ### 结构总览
 
-![三端扩展脚本的策略组结构：扩展脚本 → 主界面 25 个策略组（基础 / AI / 国际服务 / 地区聚合），右侧为各组可选项说明](assets/proxy-groups.png)
+![三端扩展脚本的策略组结构：扩展脚本 → 主界面最多 25 个策略组（基础 / AI / 国际服务 / 地区聚合，地区组按订阅实际地区出现），右侧为各组可选项说明](assets/proxy-groups.png)
 
-> 三版脚本结构一致，图中顺序即主界面 01–25 的显示顺序；另有 9 个隐藏地区自动测速组未在图中。`ChatGPT` / `Claude` / `Gemini / NotebookLM` 三个 AI 组与 Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组都通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则同时移除 9 个地区聚合组与 9 个隐藏自动组。
+> 三版脚本结构一致，图中顺序即主界面 01–25 的显示顺序；另有最多 9 个隐藏地区自动测速组未在图中。`ChatGPT` / `Claude` / `Gemini / NotebookLM` 三个 AI 组与 Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组都通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则移除全部地区聚合组与对应的隐藏自动组。图中是 9 个地区全部有节点的情形；机场缺少某个地区的节点时该地区聚合组不会出现，主界面组数相应减少。
 
 ### 主界面显示顺序（三版一致）
 
@@ -221,9 +222,9 @@ Bettbox 关闭服务或地区开关后，对应组会动态减少。
 | 01–04 基础 | `全球手动` → `自动选择` → `国外流量` → `漏网之鱼` |
 | 05–07 AI | `ChatGPT` → `Claude` → `Gemini / NotebookLM` |
 | 08–16 服务 | `Google` → `GitHub` → `X` → `YouTube` → `Netflix` → `Telegram` → `Microsoft` → `Apple` → `游戏平台` |
-| 17–25 地区 | `香港聚合` → `澳门聚合` → `台湾聚合` → `新加坡聚合` → `韩国聚合` → `日本聚合` → `美国聚合` → `欧洲聚合` → `其他地区` |
+| 17+ 地区 | 按订阅实际地区依次出现：`香港聚合` → `澳门聚合` → `台湾聚合` → `新加坡聚合` → `韩国聚合` → `日本聚合` → `美国聚合` → `欧洲聚合` → `其他地区`；缺哪个地区就跳过哪一组 |
 
-另外还有 9 个隐藏的地区自动测速组。Bettbox 关闭服务或「地区分组」开关后，相应组会从显示列表移除。上述顺序与「国外流量」的职责彼此独立：有专属规则的服务仍由各自策略组控制。
+每个出现的地区聚合组都带一个对应的隐藏地区自动测速组，数量随地区数变化（1–9）。Bettbox 关闭服务或「地区分组」开关后，相应组会从显示列表移除。上述顺序与「国外流量」的职责彼此独立：有专属规则的服务仍由各自策略组控制。
 
 ### 基础组（4 个）
 
@@ -272,7 +273,7 @@ AI 组选项仅包含：
 
 三版均让 `category-games@cn` 和 `category-game-platforms-download@cn` 先于游戏平台规则直连，涵盖已收录的国内游戏域名及下载 CDN。此组依靠域名规则；未知下载域名或直连 IP 不保证命中，下载前可在客户端连接页面检查实际策略。
 
-### 地区聚合组（9 个，可见）
+### 地区聚合组（1–9 个，可见）
 
 ```text
 香港聚合
@@ -298,11 +299,18 @@ AI 组选项仅包含：
 
 这样主界面只展示一个地区入口，同时兼顾自动测速和手动选节点。
 
-### 隐藏地区自动组（9 个）
+**这 9 个地区组不是固定出现的。** 脚本在覆写时先扫描订阅节点，只有真正存在该地区节点的地区才建组：机场只卖新加坡时，主界面只有 `新加坡聚合`，`香港聚合` / `日本聚合` / … / `其他地区` 都不会出现，AI 组、服务组与 `国外流量` 的选项也随之收缩。
+
+- 判定用的正则与优先级跟地区组自身的 `filter` / `exclude-filter` 完全一致，所以不会出现“组存在但永远是空”的情况。
+- `其他地区` 只在订阅里存在无法归类的节点（例如土耳其、巴西）时出现。
+- `proxy-providers` 的远端节点在扩展脚本阶段枚举不到：只要订阅里有无法确认的 provider，脚本保留全部 9 个地区组，宁可多显示一个空组，也不误删有节点的地区。
+- 跳过地区时会往客户端日志打一行 `[SKULL] 订阅里没有这些地区的节点，已跳过对应策略组：…`，便于确认是“机场没这个地区”还是“识别没匹配上”。
+
+### 隐藏地区自动组（1–9 个）
 
 `香港自动` · `澳门自动` · `台湾自动` · `新加坡自动` · `韩国自动` · `日本自动` · `美国自动` · `欧洲自动` · `其他自动`
 
-这些组全部设置 `hidden: true`，只供对应地区聚合组调用，不在 Clash Verge Rev / Bettbox / FlClash 主策略组列表中占用界面空间。
+这些组与可见的地区聚合组一一对应（出现几个聚合组就有几个自动组），全部设置 `hidden: true`，只供对应地区聚合组调用，不在 Clash Verge Rev / Bettbox / FlClash 主策略组列表中占用界面空间。
 
 ---
 
@@ -633,7 +641,7 @@ Netflix
 | 操作 | 结果 |
 | --- | --- |
 | 关闭某服务 | 删除对应服务组，相关规则回落 `国外流量` |
-| 关闭 `地区分组` | 同时删除 9 个地区聚合组和 9 个隐藏自动测速组，并清理其他组中的地区引用 |
+| 关闭 `地区分组` | 删除全部地区聚合组与对应的隐藏自动测速组，并把其他组里指向它们的引用改指 `国外流量` |
 | 保持默认 | 与 Clash Verge Rev 使用相同的策略组顺序和基本分流逻辑，游戏平台组首次默认 `DIRECT` |
 
 ---
@@ -642,8 +650,8 @@ Netflix
 
 | 项目 | Clash Verge Rev | Bettbox | FlClash |
 | --- | --- | --- | --- |
-| 核心策略组 / 规则 / Rule Providers | 34 / 39 / 34 | 默认 34 / 41 / 34，组可被开关裁剪 | 34 / 41 / 34 |
-| 地区自动测速组 | 9 个，全部隐藏 | 9 个，全部隐藏 | 9 个，全部隐藏 |
+| 核心策略组 / 规则 / Rule Providers | 18–34 / 39 / 34 | 默认 18–34 / 41 / 34，组可被开关裁剪 | 18–34 / 41 / 34 |
+| 地区自动测速组 | 1–9 个，全部隐藏 | 1–9 个，全部隐藏 | 1–9 个，全部隐藏 |
 | 自动测速间隔 | 600s | 600s | 600s |
 | 节点自然排序 | 纯 JS，不依赖 `Intl` | 同一套纯 JS，兼容 QuickJS | 同 Bettbox，兼容 QuickJS |
 | provider 引用 | `use: providerNames` | `use: providerNames` | `use: providerNames` |
@@ -783,7 +791,7 @@ Raw 下载错误与配置格式校验是不同环节。若已出现「此文件�
 <details>
 <summary><b>为什么最终策略组数量超过脚本定义数量？</b></summary>
 
-三版脚本均定义 34 组。若原订阅中的节点、provider、listener、tunnel、NTP 或 Rule Provider 引用了旧策略组，脚本会额外保留必要依赖并隐藏，因此最终数量可能增加。
+三版脚本固定定义 16 个主策略组，并按订阅实际存在的地区追加地区聚合组（1–9 个，另加同样数量的隐藏自动组），全地区机场共 34 组。若原订阅中的节点、provider、listener、tunnel、NTP 或 Rule Provider 引用了旧策略组，脚本会额外保留必要依赖并隐藏，因此最终数量可能增加。
 
 </details>
 
