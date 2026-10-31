@@ -11,7 +11,7 @@
 | 分流规则 | 39 / 41 / 41（CVR / Bettbox / FlClash） |
 | Rule Providers | 34（31 上游 `.mrs` @meta + 3 自维护 `domain/text`） |
 | 回归测试 | `node --test tests/validate.js` → 74 项 |
-| 最近 CI | success — `Validate scripts`，run 41203772713，head `ad156b6`（含 `2026.10.31-r1`，Node 71/71 + QuickJS） |
+| 最近 CI | success — `Validate scripts`，run 41204636775，head `192cc6d`（含 `2026.10.31-r2`，Node 74/74 + QuickJS） |
 | 结构图 | `assets/proxy-groups.png`（README 结构总览，画的是 9 个地区全有的情形） |
 
 ## 变更记录（新 → 旧）
