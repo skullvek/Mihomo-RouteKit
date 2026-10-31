@@ -1,5 +1,5 @@
 // Clash Verge Rev 全局扩展脚本
-// Version: 2026.10.30-r2
+// Version: 2026.10.31-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：订阅 -> 全局扩展脚本（Script）
 
@@ -168,30 +168,38 @@ function main(config, profileName) {
   // ---------- 2. 节点地区筛选 ----------
   // 同一套地区规则同时用于 Mihomo filter、其他地区排除和全球手动排序，避免三份规则漂移。
   const REGION_PATTERN_BODY = {
-    hk: "🇭🇰|香港|Hong ?Kong|(?:^|[^A-Za-z])HK(?:G)?(?:[0-9]|[^A-Za-z]|$)",
-    mo: "🇲🇴|澳门|澳門|Macao|Macau|(?:^|[^A-Za-z])MO(?:[0-9]|[^A-Za-z]|$)",
-    tw: "🇹🇼|台湾|台灣|Taiwan|Taipei|(?:^|[^A-Za-z])(?:TW(?:N)?|TPE|TSA|KHH)(?:[0-9]|[^A-Za-z]|$)",
-    kr: "🇰🇷|韩国|韓國|Korea|Seoul|(?:^|[^A-Za-z])(?:KR|KOR|ICN|GMP)(?:[0-9]|[^A-Za-z]|$)",
-    sg: "🇸🇬|新加坡|狮城|獅城|Singapore|(?:^|[^A-Za-z])(?:SG(?:P)?|SIN|XSP)(?:[0-9]|[^A-Za-z]|$)",
-    jp: "🇯🇵|日本|东京|東京|大阪|Japan|Tokyo|Osaka|(?:^|[^A-Za-z])(?:JP(?:N)?|NRT|HND|KIX|CTS|FUK)(?:[0-9]|[^A-Za-z]|$)",
-    us: "🇺🇸|美国|美國|美[.·|｜_\\s-]|United ?States|America|Los ?Angeles|洛杉矶|洛杉磯|San ?Jose|圣何塞|聖何塞|Seattle|西雅图|西雅圖|New ?York|纽约|紐約|Phoenix|凤凰城|鳳凰城|Salt ?Lake(?: ?City)?|盐湖城|鹽湖城|San ?Francisco|旧金山|舊金山|Dallas|达拉斯|達拉斯|Chicago|芝加哥|Las ?Vegas|拉斯维加斯|拉斯維加斯|Ashburn|阿什本|Boston|波士顿|波士頓|Miami|迈阿密|邁阿密|Denver|丹佛|Houston|休斯顿|休士頓|Austin|奥斯汀|奧斯汀|Washington ?D\\.?C\\.?|华盛顿(?:特区)?|華盛頓(?:特區)?|(?:^|[^A-Za-z])(?:LAX|SJC|SEA|NYC|PHX|SLC|SFO|DFW|ORD|LAS|IAD|BOS|MIA|DEN|IAH|HOU|DCA|US|USA)(?:[0-9]|[^A-Za-z]|$)",
+    hk: "🇭🇰|香港|Hong ?Kong|(?:^|[^A-Za-z｜|])HK(?:G)?(?:[0-9]|[^A-Za-z]|$)",
+    mo: "🇲🇴|澳门|澳門|Macao|Macau|(?:^|[^A-Za-z｜|])MO(?:[0-9]|[^A-Za-z]|$)",
+    tw: "🇹🇼|台湾|台灣|Taiwan|Taipei|(?:^|[^A-Za-z｜|])(?:TW(?:N)?|TPE|TSA|KHH)(?:[0-9]|[^A-Za-z]|$)",
+    kr: "🇰🇷|韩国|韓國|Korea|Seoul|(?:^|[^A-Za-z｜|])(?:KR|KOR|ICN|GMP)(?:[0-9]|[^A-Za-z]|$)",
+    sg: "🇸🇬|新加坡|狮城|獅城|Singapore|(?:^|[^A-Za-z｜|])(?:SG(?:P)?|SIN|XSP)(?:[0-9]|[^A-Za-z]|$)",
+    jp: "🇯🇵|日本|东京|東京|大阪|Japan|Tokyo|Osaka|(?:^|[^A-Za-z｜|])(?:JP(?:N)?|NRT|HND|KIX|CTS|FUK)(?:[0-9]|[^A-Za-z]|$)",
+    us: "🇺🇸|美国|美國|美[.·|｜_\\s-]|United ?States|America|Los ?Angeles|洛杉矶|洛杉磯|San ?Jose|圣何塞|聖何塞|Seattle|西雅图|西雅圖|New ?York|纽约|紐約|Phoenix|凤凰城|鳳凰城|Salt ?Lake(?: ?City)?|盐湖城|鹽湖城|San ?Francisco|旧金山|舊金山|Dallas|达拉斯|達拉斯|Chicago|芝加哥|Las ?Vegas|拉斯维加斯|拉斯維加斯|Ashburn|阿什本|Boston|波士顿|波士頓|Miami|迈阿密|邁阿密|Denver|丹佛|Houston|休斯顿|休士頓|Austin|奥斯汀|奧斯汀|Washington ?D\\.?C\\.?|华盛顿(?:特区)?|華盛頓(?:特區)?|(?:^|[^A-Za-z｜|])(?:LAX|SJC|SEA|NYC|PHX|SLC|SFO|DFW|ORD|LAS|IAD|BOS|MIA|DEN|IAH|HOU|DCA|US|USA)(?:[0-9]|[^A-Za-z]|$)",
     // 挪威保留国旗/中文/英文/NOR；不使用易与 No.01 编号混淆的两字母 NO。
-    eu: "🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇪🇸|🇮🇹|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇵🇱|🇮🇪|🇦🇹|🇧🇪|🇨🇿|🇩🇰|🇵🇹|🇬🇷|🇮🇸|🇱🇺|欧洲|歐洲|Europe|European|英国|英國|法国|法國|德国|德國|荷兰|荷蘭|西班牙|意大利|瑞士|瑞典|芬兰|挪威|Norway|波兰|爱尔兰|奥地利|比利时|捷克|丹麦|葡萄牙|希腊|冰岛|卢森堡|维也纳|布鲁塞尔|布拉格|哥本哈根|里斯本|雅典|雷克雅未克|London|Paris|Frankfurt|Amsterdam|Madrid|Milan|Zurich|Stockholm|Helsinki|Oslo|Warsaw|Dublin|Vienna|Brussels|Prague|Copenhagen|Lisbon|Athens|Reykjavik|(?:^|[^A-Za-z])(?:EU|UK|GB|GBR|DE|DEU|FR|FRA|NL|NLD|ES|ESP|IT|ITA|CH|CHE|SE|SWE|FI|FIN|NOR|PL|POL|IE|IRL|AT|AUT|BE|BEL|CZ|CZE|DK|DNK|PT|PRT|GR|GRC)(?:[0-9]|[^A-Za-z]|$)"
+    eu: "🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇪🇸|🇮🇹|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇵🇱|🇮🇪|🇦🇹|🇧🇪|🇨🇿|🇩🇰|🇵🇹|🇬🇷|🇮🇸|🇱🇺|欧洲|歐洲|Europe|European|英国|英國|法国|法國|德国|德國|荷兰|荷蘭|西班牙|意大利|瑞士|瑞典|芬兰|挪威|Norway|波兰|爱尔兰|奥地利|比利时|捷克|丹麦|葡萄牙|希腊|冰岛|卢森堡|维也纳|布鲁塞尔|布拉格|哥本哈根|里斯本|雅典|雷克雅未克|London|Paris|Frankfurt|Amsterdam|Madrid|Milan|Zurich|Stockholm|Helsinki|Oslo|Warsaw|Dublin|Vienna|Brussels|Prague|Copenhagen|Lisbon|Athens|Reykjavik|(?:^|[^A-Za-z｜|])(?:EU|UK|GB|GBR|DE|DEU|FR|FRA|NL|NLD|ES|ESP|IT|ITA|CH|CHE|SE|SWE|FI|FIN|NOR|PL|POL|IE|IRL|AT|AUT|BE|BEL|CZ|CZE|DK|DNK|PT|PRT|GR|GRC)(?:[0-9]|[^A-Za-z]|$)"
   };
 
   // 地区优先级同时定义“全球手动”排序和地区组互斥关系。
-  // 若一个名称同时含多个地区标识（如“香港→美国”），只归入最靠前的地区。
+  // 归属只看节点名第一个 ｜ / | 之前的部分：中转标签（“🇯🇵日本01｜HK｜…”）不参与判定；
+  // 同一段里命中多个地区（如“香港→美国”）时，仍只归入优先级最高的那个。
   const REGION_KEYS = ["hk", "mo", "tw", "sg", "kr", "jp", "us", "eu"];
 
+  // 地区归属只看节点名第一个 ｜ / | 之前的部分：后面的中转标签（“🇯🇵日本01｜HK｜…”）
+  // 不参与判定，中转地不再把节点抢到别的地区；开头没有已知地区标识
+  // （含 🇧🇷 这类未收录国旗）的节点一律归「其他地区」。
+  const LEADING_BODY = Object.fromEntries(
+    REGION_KEYS.map((key) => [key, `^(?:[^｜|]*)(?:${REGION_PATTERN_BODY[key]})`])
+  );
+
   const FILTER = Object.fromEntries(
-    REGION_KEYS.map((key) => [key, `(?i)(${REGION_PATTERN_BODY[key]})`])
+    REGION_KEYS.map((key) => [key, `(?i)(${LEADING_BODY[key]})`])
   );
 
   const REGION_EXCLUDE = Object.fromEntries(
     REGION_KEYS.map((key, index) => {
       const higherPriorityPatterns = REGION_KEYS
         .slice(0, index)
-        .map((higherKey) => REGION_PATTERN_BODY[higherKey]);
+        .map((higherKey) => LEADING_BODY[higherKey]);
 
       return [
         key,
@@ -203,11 +211,11 @@ function main(config, profileName) {
   );
 
   const MANUAL_REGION_TESTS = REGION_KEYS.map(
-    (key) => new RegExp(`(?:${REGION_PATTERN_BODY[key]})`, "i")
+    (key) => new RegExp(LEADING_BODY[key], "i")
   );
 
   const OTHER_EXCLUDE =
-    `(?i)(${PSEUDO_PATTERN_BODY}|${REGION_KEYS.map((key) => REGION_PATTERN_BODY[key]).join("|")})`;
+    `(?i)(${PSEUDO_PATTERN_BODY}|${REGION_KEYS.map((key) => LEADING_BODY[key]).join("|")})`;
 
   const PSEUDO_NODE_RE = new RegExp(`(?:${PSEUDO_PATTERN_BODY})`, "i");
 
@@ -305,8 +313,8 @@ function main(config, profileName) {
       }
     }
     const other = known.names.some((name) => {
-      for (const key of REGION_KEYS) {
-        if (patternMatches(REGION_PATTERN_BODY[key], name)) return false;
+      for (let i = 0; i < MANUAL_REGION_TESTS.length; i += 1) {
+        if (MANUAL_REGION_TESTS[i].test(name)) return false;
       }
       return true;
     });
@@ -320,38 +328,7 @@ function main(config, profileName) {
     return MANUAL_REGION_TESTS.length;
   };
 
-  // Boa 未启用 Intl 时 localeCompare 的 numeric 选项会被忽略；使用纯 JS 自然排序保持跨引擎一致。
-  const naturalCompare = (a, b) => {
-    const ax = String(a).toLowerCase().split(/(\d+)/);
-    const bx = String(b).toLowerCase().split(/(\d+)/);
-    const length = Math.max(ax.length, bx.length);
-
-    for (let i = 0; i < length; i += 1) {
-      const x = ax[i];
-      const y = bx[i];
-
-      if (x === undefined) return -1;
-      if (y === undefined) return 1;
-      if (x === y) continue;
-
-      const xIsNumber = /^\d+$/.test(x);
-      const yIsNumber = /^\d+$/.test(y);
-
-      if (xIsNumber && yIsNumber) {
-        const xn = x.replace(/^0+(?=\d)/, "");
-        const yn = y.replace(/^0+(?=\d)/, "");
-
-        if (xn.length !== yn.length) return xn.length - yn.length;
-        if (xn !== yn) return xn < yn ? -1 : 1;
-        if (x.length !== y.length) return x.length - y.length;
-        continue;
-      }
-
-      return x < y ? -1 : 1;
-    }
-
-    return 0;
-  };
+  // 同地区内保留订阅原顺序：机场怎么排，「全球手动」就怎么排，不再按名称重排。
 
   const getManualProxyNames = () => Array.isArray(config.proxies)
     ? config.proxies
@@ -363,10 +340,9 @@ function main(config, profileName) {
             name.length > 0 &&
             !PSEUDO_NODE_RE.test(name)
         )
-        .sort((a, b) => {
-          const rankDiff = manualRegionRank(a) - manualRegionRank(b);
-          return rankDiff !== 0 ? rankDiff : naturalCompare(a, b);
-        })
+        .map((name, index) => ({ name, index, rank: manualRegionRank(name) }))
+        .sort((a, b) => (a.rank - b.rank) || (a.index - b.index))
+        .map((entry) => entry.name)
     : [];
   const manualProxyNames = getManualProxyNames();
 
@@ -543,8 +519,8 @@ function main(config, profileName) {
       type: "select",
       icon: ICON.manual,
       "exclude-type": GROUP_EXCLUDE_TYPES,
-      // 直接节点按 香港→澳门→台湾→新加坡→韩国→日本→美国→欧洲→其他 排序。
-      // provider 动态节点通过 use 引入，不参与这里的 JS 自然排序。
+      // 直接节点按 香港→澳门→台湾→新加坡→韩国→日本→美国→欧洲→其他 分桶，
+      // 同地区内保留订阅原顺序；provider 动态节点通过 use 引入，不参与这里的排序。
       // 不加入 DIRECT，并排除自定义直连/绕过出站。
       ...(manualProxyNames.length > 0
         ? { proxies: [...manualProxyNames] }

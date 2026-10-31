@@ -44,7 +44,7 @@
    | AI 三组 | `select` | 自动选择 / 全球手动 / 订阅实际地区的聚合组 | **`default-selected: 全球手动`**，无 `DIRECT` |
    | Google / GitHub / X / YouTube / Netflix / Telegram | `select` | 上述 + `DIRECT` | **`default-selected: 全球手动`** |
    | Microsoft / Apple / 游戏平台 | `select` | 同上 | **`default-selected: DIRECT`** |
-   | 地区聚合 1–9 | `select` | 该地区隐藏自动组 + 该地区全部节点；**订阅里没有该地区节点时不建组** | 首位 |
+   | 地区聚合 1–9 | `select` | 该地区隐藏自动组 + 该地区全部节点；**订阅里没有该地区节点时不建组**；归属只看节点名第一个 `｜` / `|` 之前的部分，中转标签不参与判定 | 首位 |
    | 地区自动 1–9 | `url-test` | `hidden: true`，只供聚合组调用；与聚合组一一对应 | — |
 
    `default-selected` 是字符串成员名；`select` 组没有它就从选项第一项开始。改动默认值时必须在 `tests/validate.js` 的 `core design contracts` 里加断言。
@@ -69,10 +69,11 @@
 
 - **域名判错（该直连却走了代理 / 反之）** → `rules/direct.list` 或 `rules/proxy.list`，**不要**改脚本。
 - **某服务需要真实 IP** → `rules/fake-ip-filter.list`（只影响 Fake-IP，不改去向）。
+- **`全球手动` 排序**：地区分桶 + 同地区保留订阅原顺序（`.map(...).sort(rank, index)`），不要再引入按名称重排——用户是按机场自己的顺序找节点的。
 - **策略组结构、默认值、节点识别、DNS、TUN** → 三份脚本 + `tests/validate.js` + README + 结构图。
 - **新增服务组**：三份脚本同时加组与规则（注意规则位置）、`Bettbox` 的 `ruleOptionsEnable` / `serviceConfigs`、测试断言、README 的组顺序表与结构图。
 - **Bettbox 开关**：`featureEnabled` / `serviceTarget` 负责删组并把相关规则回落 `国外流量`；`地区分组` 开关会删掉全部聚合组与对应的隐藏自动组。
-- **地区组按订阅动态出现**：`REGION_AVAILABILITY`（2.1 节，复用 `FILTER` / `REGION_EXCLUDE` 判定节点名）→ `REGION_DEFS` / `ACTIVE_REGIONS`（4 节）→ 组列表用 `...ACTIVE_REGIONS.map(...)` 展开；`preserveDependencies` 里的 `missingRegionNames` 负责把旧组对已跳过地区组的引用改指 `国外流量`。改判定逻辑要同步三份脚本，并在 `tests/validate.js` 的 `region groups follow the subscription` 里补断言。
+- **地区组按订阅动态出现**：`REGION_AVAILABILITY`（2.1 节，复用 `FILTER` / `REGION_EXCLUDE` 判定节点名；两者都由 `LEADING_BODY` 生成，只匹配节点名第一个 `｜` / `|` 之前的部分）→ `REGION_DEFS` / `ACTIVE_REGIONS`（4 节）→ 组列表用 `...ACTIVE_REGIONS.map(...)` 展开；`preserveDependencies` 里的 `missingRegionNames` 负责把旧组对已跳过地区组的引用改指 `国外流量`。改判定逻辑要同步三份脚本，并在 `tests/validate.js` 的 `region groups follow the subscription` 里补断言。
 
 ## 5. README 同步点
 
@@ -124,6 +125,11 @@ node -e 'const {execute,SCRIPTS}=require("./tests/helpers");for(const f of SCRIP
 - **客户端会在脚本之后回写自己的设置**：`mode`、`unified-delay`、顶层 `ipv6`、`find-process-mode`、TUN 全部以 App 为准，脚本里写了也可能被覆盖——不要承诺「脚本已强制」。
 - **别写死 34 组**：地区组数量由订阅节点决定——`direct-proxies.json` 只有香港 / 美国 → 20 组，`provider-only.json` 只有 NRT → 18 组，`mixed-provider.json` 是新加坡 + 台湾 → 20 组。断言组数前先看 fixture 里到底有哪些地区；只有「无法枚举的远端 provider」才会退回 9 个地区全保留。
 - **Bettbox / FlClash 的 DNS 覆写**：客户端一旦开启 DNS 覆写，脚本的 `nameserver-policy`、`direct-nameserver` 会被重新生成覆盖，README 已要求用户关闭，排查问题时先问这一项。
+
+## 8.1 地区归属的两个易错点
+
+- **中转标签**：`🇯🇵日本01｜HK｜三网优化` 的第二个字段是中转入口，出口是日本。`REGION_PATTERN_BODY` 的字母边界必须是 `[^A-Za-z｜|]`，把 `｜` / `|` 加回去就会让中转地（香港）抢走整批节点。
+- **未收录国旗**：`🇧🇷巴西01｜HK｜…` 的开头没有已知地区标识，按设计归「其他地区」，不进香港聚合；新增地区时同步 `REGION_KEYS`、`REGION_DEFS` 与 `tests/validate.js` 的 `relay tags never hijack the node's own region`。
 
 ## 9. 不要做的事
 

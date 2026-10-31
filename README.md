@@ -41,7 +41,7 @@
 | 常用国际服务 | Google、GitHub、X、YouTube、Netflix、Telegram、Microsoft、Apple 独立策略组；前六个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
 | 游戏平台 | 三版均独立分流，首次默认 `DIRECT`；Bettbox 可通过可视化开关关闭 |
 | 地区节点 | 香港、澳门、台湾、新加坡、韩国、日本、美国、欧洲、其他地区；同时支持自动测速与手动选择，且**只给订阅里实际存在节点的地区建组** |
-| 节点整理 | 过滤公告 / 流量提示等伪节点；内联节点按地区 + 数字自然排序 |
+| 节点整理 | 过滤公告 / 流量提示等伪节点；内联节点按地区分桶，同地区保留订阅原顺序 |
 | Provider | 自动补齐缺失的 health-check 参数，同时尊重机场显式关闭的健康检查 |
 | DNS | 国内查询直连；默认国外查询经 `国外流量`；提供独立 `direct-nameserver` |
 | 兼容性 | 自动保留真正被节点、provider、listener、tunnel、NTP 等引用的旧策略组依赖 |
@@ -52,6 +52,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-10-31 | 地区判定改为「只看节点名第一个 `｜` / `|` 之前的部分」：`🇯🇵日本01｜HK｜三网优化` 这类带中转标签的节点归自己的地区，不再被中转地抢到香港聚合；未收录国旗（`🇧🇷` / `🇹🇷` 等）归「其他地区」。`全球手动` 同一地区内改为保留订阅原顺序，不再按名称重排。三版版本标识统一为 `2026.10.31-r1`。 |
 | 2026-10-30 | 基础组 `国外流量` 改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`漏网之鱼` 的首选出口保持 `国外流量`。三版版本标识统一为 `2026.10.30-r2`。 |
 | 2026-10-30 | 地区策略组改为按订阅实际节点动态出现：机场没有某个地区的节点时不再显示该地区聚合组与隐藏自动组，AI 组 / 服务组 / `国外流量` 的选项同步收缩；订阅里存在无法枚举的 `proxy-providers` 远端节点时保留全部 9 个地区组。三版版本标识统一为 `2026.10.30-r1`。 |
 | 2026-10-29 | ChatGPT / Claude / Gemini / NotebookLM 三个 AI 组改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`rules/direct.list` 补入 Wise 汇款域名（`wise.com` / `transferwise.com` / `wise.us` / `wise.jobs` / `wi.se`），业务与 DNS 都直连，不再经 `国外流量`。三版版本标识统一为 `2026.10.29-r1`。 |
@@ -65,7 +66,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.10.30-r2`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.10.31-r1`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -98,9 +99,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.30-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.30-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.30-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.31-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.10.31-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.10.31-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -232,7 +233,7 @@ flowchart TD
 
 | 代理组 | 类型 | 用途 |
 | --- | --- | --- |
-| `全球手动` | `select` | 手动选择节点；过滤伪节点；内联节点按地区和数字自然排序 |
+| `全球手动` | `select` | 手动选择节点；过滤伪节点；内联节点按地区分桶、同地区保留订阅原顺序 |
 | `自动选择` | `url-test` | 全节点自动测速，默认 `600s`、容差 `80ms`、Lazy 模式 |
 | `国外流量` | `select` | 一般国外流量的统一出口，只允许代理路径；首次默认选中 `全球手动` |
 | `漏网之鱼` | `select` | 最终 `MATCH` 落点，默认首选 `国外流量`，同时保留手动 `DIRECT` 兜底 |
@@ -324,7 +325,7 @@ AI 组选项仅包含：
 
 **香港 → 澳门 → 台湾 → 新加坡 → 韩国 → 日本 → 美国 → 欧洲 → 其他**
 
-若同一节点名称同时命中多个地区标识，只归入优先级最高的地区，避免一个节点重复出现在多个地区组。
+归属只看节点名第一个 `｜` / `|` **之前**的部分：机场常见的 `🇯🇵日本01｜HK｜三网优化` 里，第二个字段是中转入口而不是出口，不参与判定。开头没有已知地区标识的节点（例如 `🇧🇷巴西01｜HK｜…`、`🇹🇷 土耳其01｜三网优化`）一律归入「其他地区」，不会被中转地抢走；同一段里命中多个地区标识时，仍只归入优先级最高的那个，避免一个节点重复出现在多个地区组。
 
 ### 识别范围
 
@@ -338,7 +339,7 @@ AI 组选项仅包含：
 | 韩国 | `ICN` / `GMP` |
 | 日本 | `NRT` / `HND` / `KIX` / `CTS` / `FUK` |
 
-机场代码按字母边界匹配，支持 `SIN02`、`NRT Premium 01` 等命名，不会把 `SINGLE` 误判为新加坡。
+机场代码按字母边界匹配，支持 `SIN02`、`NRT Premium 01` 等命名，不会把 `SINGLE` 误判为新加坡；分隔符 `｜` / `|` 不算字母边界，所以 `…｜HK｜…` 这种中转标签也不会被当成香港。
 
 美国识别额外覆盖 Los Angeles、San Jose、Seattle、New York、Phoenix、Salt Lake City、San Francisco、Dallas、Chicago、Las Vegas、Ashburn、Boston、Miami、Denver、Houston、Austin、Washington D.C. 等常见节点名。
 
@@ -363,18 +364,10 @@ Expire / Traffic Remaining / Website ...
 
 1. 过滤 Direct / Pass / Compatible 等绕过型出站
 2. 过滤机场伪节点
-3. 按地区优先级排序
-4. 同一地区内使用纯 JavaScript 数字自然排序
+3. 按地区优先级分桶（香港 → … → 其他）
+4. 同一地区内**保留订阅原顺序**，不按名称重排
 
-例如：
-
-```text
-香港1
-香港2
-香港10
-```
-
-不会被错误排序成 `1 → 10 → 2`。
+机场怎么排，`全球手动` 就怎么排：`🇸🇬新加坡双 ISP …` 在订阅里排在 `🇸🇬新加坡原生 IP …` 前面，就仍然排在前面；机场改名、加节点也不会让同一地区的顺序跳变。
 
 若订阅使用 `proxy-providers`，`全球手动` 通过 `use` 动态引用 provider；provider 内部节点顺序由 Mihomo 运行时管理。
 
@@ -655,7 +648,7 @@ Netflix
 | 核心策略组 / 规则 / Rule Providers | 18–34 / 39 / 34 | 默认 18–34 / 41 / 34，组可被开关裁剪 | 18–34 / 41 / 34 |
 | 地区自动测速组 | 1–9 个，全部隐藏 | 1–9 个，全部隐藏 | 1–9 个，全部隐藏 |
 | 自动测速间隔 | 600s | 600s | 600s |
-| 节点自然排序 | 纯 JS，不依赖 `Intl` | 同一套纯 JS，兼容 QuickJS | 同 Bettbox，兼容 QuickJS |
+| 节点排序 | 地区分桶 + 订阅原顺序，纯 JS | 同一套纯 JS，兼容 QuickJS | 同 Bettbox，兼容 QuickJS |
 | provider 引用 | `use: providerNames` | `use: providerNames` | `use: providerNames` |
 | 可视化开关 | 无 | 13 个 | 无，固定启用全部组 |
 | `find-process-mode` | 写入 `strict` | 写入 `off`，App 最终覆盖 | 不写入，以 App 为准 |

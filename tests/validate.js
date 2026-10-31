@@ -108,6 +108,27 @@ for (const file of SCRIPTS) {
     }
     assert.deepEqual(groups.filter(g => matches(g, 'HKG → NRT 01')).map(g => g.name), ['香港聚合']);
   });
+  test(`${file}: relay tags never hijack the node's own region`, () => {
+    // 每个地区放一个节点让地区组齐全，再加一个无法归类的节点让「其他地区」存在。
+    const seed = ['香港01', '澳门01', '台湾01', '新加坡01', '韩国01', '日本01', '美国01', '英国01', '土耳其01']
+      .map(name => ({name, type: 'ss'}));
+    const c = execute(file, {proxies: seed});
+    const groups = c['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name));
+    // 第二个字段是「｜HK｜」这类中转标签：节点仍归自己的地区，不再被香港抢走。
+    assert.deepEqual(groups.filter(g => matches(g, '🇯🇵日本01｜HK｜三网优化')).map(g => g.name), ['日本聚合']);
+    assert.deepEqual(groups.filter(g => matches(g, '🇺🇸美国01｜HK｜三网优化')).map(g => g.name), ['美国聚合']);
+    assert.deepEqual(groups.filter(g => matches(g, '🇲🇴澳门01｜HK｜三网优化×0.5')).map(g => g.name), ['澳门聚合']);
+    // 未收录国旗（🇧🇷）即使带 HK 中转标签也只进「其他地区」。
+    assert.deepEqual(groups.filter(g => matches(g, '🇧🇷巴西01｜HK｜三网优化')).map(g => g.name), ['其他地区']);
+    // 名字里没有分隔符时，仍按名字中的地区标识归类。
+    assert.deepEqual(groups.filter(g => matches(g, '线路-hkg02')).map(g => g.name), ['香港聚合']);
+  });
+  test(`${file}: 全球手动 keeps the subscription order inside a region`, () => {
+    const names = ['🇸🇬新加坡双 ISP 82.21.81.227 ①', '🇸🇬新加坡原生 IP 178.94.14.111 ①', '🇭🇰香港02', '🇭🇰香港01'];
+    const c = execute(file, {proxies: names.map(name => ({name, type: 'ss'}))});
+    const manual = c['proxy-groups'].find(g => g.name === '全球手动');
+    assert.deepEqual(manual.proxies, ['🇭🇰香港02', '🇭🇰香港01', names[0], names[1]]);
+  });
   test(`${file}: information nodes removed without removing real nodes`, () => {
     const real = ['香港01｜不限流量', 'NRT Panel Premium', 'SIN Channel 01', 'TPE Author 02', '美国 USED Premium', '新加坡 TOTAL Premium', '机场专线 SIN 01'];
     const fake = ['USED: 12 GB', 'TOTAL: 100 GB', 'EXPIRE: 2027-01-01', 'EMAIL: support@example.com', 'Panel: https://example.com', 'Channel: @notice', 'Author: someone', '工单：https://example.com'];
