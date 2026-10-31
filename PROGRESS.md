@@ -6,11 +6,11 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 三端版本 | `2026.10.31-r1`（Clash Verge Rev / Bettbox / FlClash） |
+| 三端版本 | `2026.10.31-r2`（Clash Verge Rev / Bettbox / FlClash） |
 | 策略组 | 16 固定 + 每个有节点的地区 2 组（18–34；9 地区全有 = 25 可见 + 9 隐藏） |
 | 分流规则 | 39 / 41 / 41（CVR / Bettbox / FlClash） |
 | Rule Providers | 34（31 上游 `.mrs` @meta + 3 自维护 `domain/text`） |
-| 回归测试 | `node --test tests/validate.js` → 71 项 |
+| 回归测试 | `node --test tests/validate.js` → 74 项 |
 | 最近 CI | success — `Validate scripts`，run 41203772713，head `ad156b6`（含 `2026.10.31-r1`，Node 71/71 + QuickJS） |
 | 结构图 | `assets/proxy-groups.png`（README 结构总览，画的是 9 个地区全有的情形） |
 
@@ -18,6 +18,7 @@
 
 | 日期 | 提交 | 类型 | 内容 | 验证 |
 | --- | --- | --- | --- | --- |
+| 2026-10-31 | — | fix | 欧洲与「其他地区」增加国家二级分组：`countryKey` 取节点名开头的国旗（代理对比较，不依赖 `u` 标志），桶内同国家相邻、国家内部保持订阅原顺序；其余七个大区不再拆分；版本升 `2026.10.31-r2` | `node --check` ×3、`node --test` 74/74（新增 `Europe and 其他地区 keep the same country together`）、mihomo v1.19.33 `-t` ×4 全 `test is successful`、真实订阅（76 节点）复算：同国家被拆从 9 个降到 0 个 |
 | 2026-10-31 | `a3b0fb0` | fix | 地区归属改为只看节点名第一个 `｜` / `|` 之前的部分：`🇯🇵日本01｜HK｜三网优化` 归日本聚合（原先被中转地抢进香港聚合），未收录国旗 `🇧🇷` / `🇹🇷` 归「其他地区」；`REGION_PATTERN_BODY` 的字母边界不再把分隔符当边界；`全球手动` 同地区内改回订阅原顺序（`.map(...).sort(rank, index)`，删除 `naturalCompare`）；版本升 `2026.10.31-r1` | `node --check` ×3、`node --test` 71/71（新增 relay 标签 / 订阅顺序两项断言）、mihomo v1.19.33 `-t` ×3 全 `test is successful`、运行态 `/proxies` 核对：香港聚合 5（无外区）、日本聚合含 `日本01｜HK`、其他地区含 `巴西01｜HK`、`全球手动` 18 节点按地区分桶且同地区保持订阅顺序 |
 | 2026-10-30 | `533ceea` | feat | 基础组 `国外流量` 改 `default-selected: 全球手动`（`foreignSelect` 工厂，仍无 `DIRECT`），首次加载默认选中「全球手动」；`漏网之鱼` 首选出口不变；版本升 `2026.10.30-r2` | `node --check` ×3、`node --test` 65/65、三端默认项打印（`国外流量=全球手动`）、mihomo v1.19.33 `-t` ×3 全 `test is successful` |
 | 2026-10-30 | `992d816` | feat | 地区策略组按订阅实际节点动态出现：`REGION_AVAILABILITY` 复用地区正则判定节点名，没有节点的地区不再建聚合组与隐藏自动组，AI / 服务组 / `国外流量` 的选项同步收缩；远端 `proxy-providers` 无法枚举时退回全部 9 组；`preserveDependencies` 把旧组对已跳过地区组的引用改指 `国外流量`；版本升 `2026.10.30-r1` | `node --check` ×3、`node --test` 65/65、真实订阅（2 节点单地区 → 18 组 / 59 节点 → 34 组）复算、mihomo v1.19.33 `-t` ×12（合成 + 3 份真实订阅 ×3 端）全 `test is successful`、运行态 `/proxies` 核对地区组成员 |

@@ -129,6 +129,22 @@ for (const file of SCRIPTS) {
     const manual = c['proxy-groups'].find(g => g.name === '全球手动');
     assert.deepEqual(manual.proxies, ['🇭🇰香港02', '🇭🇰香港01', names[0], names[1]]);
   });
+  test(`${file}: Europe and 其他地区 keep the same country together`, () => {
+    // 机场常按线路类型排（三网 / IPv6 / CMIN2 / HK），同国家的节点会被别的国家隔开。
+    const names = [
+      '🇬🇧英国01｜三网优化', '🇩🇪德国01｜三网优化', '🇬🇧英国01｜HK｜三网优化', '🇩🇪德国01｜HK｜三网优化',
+      '🇳🇱荷兰01｜三网优化', '🇧🇷巴西01｜三网优化', '🇹🇷 土耳其01｜三网优化', '🇧🇷巴西01｜HK｜三网优化'
+    ];
+    const c = execute(file, {proxies: names.map(name => ({name, type: 'ss'}))});
+    const manual = c['proxy-groups'].find(g => g.name === '全球手动');
+    assert.deepEqual(manual.proxies, [
+      '🇩🇪德国01｜三网优化', '🇩🇪德国01｜HK｜三网优化',
+      '🇬🇧英国01｜三网优化', '🇬🇧英国01｜HK｜三网优化',
+      '🇳🇱荷兰01｜三网优化',
+      '🇧🇷巴西01｜三网优化', '🇧🇷巴西01｜HK｜三网优化',
+      '🇹🇷 土耳其01｜三网优化'
+    ]);
+  });
   test(`${file}: information nodes removed without removing real nodes`, () => {
     const real = ['香港01｜不限流量', 'NRT Panel Premium', 'SIN Channel 01', 'TPE Author 02', '美国 USED Premium', '新加坡 TOTAL Premium', '机场专线 SIN 01'];
     const fake = ['USED: 12 GB', 'TOTAL: 100 GB', 'EXPIRE: 2027-01-01', 'EMAIL: support@example.com', 'Panel: https://example.com', 'Channel: @notice', 'Author: someone', '工单：https://example.com'];

@@ -69,7 +69,7 @@
 
 - **域名判错（该直连却走了代理 / 反之）** → `rules/direct.list` 或 `rules/proxy.list`，**不要**改脚本。
 - **某服务需要真实 IP** → `rules/fake-ip-filter.list`（只影响 Fake-IP，不改去向）。
-- **`全球手动` 排序**：地区分桶 + 同地区保留订阅原顺序（`.map(...).sort(rank, index)`），不要再引入按名称重排——用户是按机场自己的顺序找节点的。
+- **`全球手动` 排序**：地区分桶 + 同地区保留订阅原顺序（`.map(...).sort(rank, country, index)`），不要再引入按名称重排——用户是按机场自己的顺序找节点的。欧洲与「其他地区」是唯一的多国混排大区，桶内用 `countryKey`（节点名开头的国旗，代理对比较，不依赖 `u` 标志）做二级分组，否则机场按线路类型排序时同国家节点会被拆开。
 - **策略组结构、默认值、节点识别、DNS、TUN** → 三份脚本 + `tests/validate.js` + README + 结构图。
 - **新增服务组**：三份脚本同时加组与规则（注意规则位置）、`Bettbox` 的 `ruleOptionsEnable` / `serviceConfigs`、测试断言、README 的组顺序表与结构图。
 - **Bettbox 开关**：`featureEnabled` / `serviceTarget` 负责删组并把相关规则回落 `国外流量`；`地区分组` 开关会删掉全部聚合组与对应的隐藏自动组。

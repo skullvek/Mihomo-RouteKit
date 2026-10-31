@@ -41,7 +41,7 @@
 | 常用国际服务 | Google、GitHub、X、YouTube、Netflix、Telegram、Microsoft、Apple 独立策略组；前六个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
 | 游戏平台 | 三版均独立分流，首次默认 `DIRECT`；Bettbox 可通过可视化开关关闭 |
 | 地区节点 | 香港、澳门、台湾、新加坡、韩国、日本、美国、欧洲、其他地区；同时支持自动测速与手动选择，且**只给订阅里实际存在节点的地区建组** |
-| 节点整理 | 过滤公告 / 流量提示等伪节点；内联节点按地区分桶，同地区保留订阅原顺序 |
+| 节点整理 | 过滤公告 / 流量提示等伪节点；内联节点按地区分桶、同地区保留订阅原顺序；欧洲与「其他地区」再按国家分组 |
 | Provider | 自动补齐缺失的 health-check 参数，同时尊重机场显式关闭的健康检查 |
 | DNS | 国内查询直连；默认国外查询经 `国外流量`；提供独立 `direct-nameserver` |
 | 兼容性 | 自动保留真正被节点、provider、listener、tunnel、NTP 等引用的旧策略组依赖 |
@@ -52,6 +52,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-10-31 | 欧洲与「其他地区」在地区分桶后再按节点名开头的国旗做二级分组，同一国家的节点连在一起（机场按线路类型排序时 `🇩🇪德国01｜三网优化` 与 `🇩🇪德国01｜HK｜三网优化` 不再被别的国家隔开）；国家内部仍按订阅原顺序。三版版本标识统一为 `2026.10.31-r2`。 |
 | 2026-10-31 | 地区判定改为「只看节点名第一个 `｜` / `|` 之前的部分」：`🇯🇵日本01｜HK｜三网优化` 这类带中转标签的节点归自己的地区，不再被中转地抢到香港聚合；未收录国旗（`🇧🇷` / `🇹🇷` 等）归「其他地区」。`全球手动` 同一地区内改为保留订阅原顺序，不再按名称重排。三版版本标识统一为 `2026.10.31-r1`。 |
 | 2026-10-30 | 基础组 `国外流量` 改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`漏网之鱼` 的首选出口保持 `国外流量`。三版版本标识统一为 `2026.10.30-r2`。 |
 | 2026-10-30 | 地区策略组改为按订阅实际节点动态出现：机场没有某个地区的节点时不再显示该地区聚合组与隐藏自动组，AI 组 / 服务组 / `国外流量` 的选项同步收缩；订阅里存在无法枚举的 `proxy-providers` 远端节点时保留全部 9 个地区组。三版版本标识统一为 `2026.10.30-r1`。 |
@@ -66,7 +67,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.10.31-r1`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.10.31-r2`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -99,9 +100,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.31-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.31-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.31-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.31-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.10.31-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.10.31-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -366,8 +367,9 @@ Expire / Traffic Remaining / Website ...
 2. 过滤机场伪节点
 3. 按地区优先级分桶（香港 → … → 其他）
 4. 同一地区内**保留订阅原顺序**，不按名称重排
+5. 欧洲与「其他地区」是多国混排的大区，桶内再按节点名开头的国旗做二级分组，同一国家连在一起
 
-机场怎么排，`全球手动` 就怎么排：`🇸🇬新加坡双 ISP …` 在订阅里排在 `🇸🇬新加坡原生 IP …` 前面，就仍然排在前面；机场改名、加节点也不会让同一地区的顺序跳变。
+机场怎么排，`全球手动` 就怎么排：`🇸🇬新加坡双 ISP …` 在订阅里排在 `🇸🇬新加坡原生 IP …` 前面，就仍然排在前面；机场改名、加节点也不会让同一地区的顺序跳变。欧洲（`🇩🇪` / `🇬🇧` / `🇳🇱` …）与「其他地区」（`🇧🇷` / `🇹🇷` …）按国家相邻，国家内部仍按订阅顺序；香港 / 澳门 / 台湾 / 新加坡 / 韩国 / 日本 / 美国这七个大区本身就是单一国家，不再二次拆分。
 
 若订阅使用 `proxy-providers`，`全球手动` 通过 `use` 动态引用 provider；provider 内部节点顺序由 Mihomo 运行时管理。
 

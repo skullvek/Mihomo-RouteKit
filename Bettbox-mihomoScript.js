@@ -38,7 +38,7 @@ var serviceConfigs = [
 ];
 
 // Bettbox Android 全局覆写脚本
-// Version: 2026.10.31-r1
+// Version: 2026.10.31-r2
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：设置 -> 高级设置 -> 脚本；配置 -> 订阅 -> 覆写 -> 脚本。
 
@@ -350,7 +350,19 @@ function main(config) {
     return MANUAL_REGION_TESTS.length;
   };
 
+  // 欧洲与「其他地区」是多国混排的大区：这两个桶再按节点名开头的国旗做二级分组，
+  // 让同一国家的节点连在一起；其余大区本身就是单一国家，不再拆。
+  // 用代理对判断国旗（不依赖 u 标志），QuickJS / Boa 都能跑。
+  const COUNTRY_SORT_FROM = REGION_KEYS.indexOf("eu");
+  const countryKey = (name) => {
+    if (typeof name !== "string" || name.length < 4) return "";
+    if (name.charCodeAt(0) !== 0xD83C) return "";
+    const low = name.charCodeAt(1);
+    return low >= 0xDDE6 && low <= 0xDDFF ? name.slice(0, 4) : "";
+  };
+
   // 同地区内保留订阅原顺序：机场怎么排，「全球手动」就怎么排，不再按名称重排。
+  // 唯一例外是欧洲 / 其他地区这类多国混排的桶，先按国家分组，组内再保持订阅顺序。
 
   const getManualProxyNames = () => Array.isArray(config.proxies)
     ? config.proxies
@@ -362,8 +374,20 @@ function main(config) {
             name.length > 0 &&
             !PSEUDO_NODE_RE.test(name)
         )
-        .map((name, index) => ({ name, index, rank: manualRegionRank(name) }))
-        .sort((a, b) => (a.rank - b.rank) || (a.index - b.index))
+        .map((name, index) => {
+          const rank = manualRegionRank(name);
+          return {
+            name,
+            index,
+            rank,
+            country: rank >= COUNTRY_SORT_FROM ? countryKey(name) : ""
+          };
+        })
+        .sort((a, b) =>
+          (a.rank - b.rank) ||
+          (a.country < b.country ? -1 : a.country > b.country ? 1 : 0) ||
+          (a.index - b.index)
+        )
         .map((entry) => entry.name)
     : [];
 
