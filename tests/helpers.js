@@ -10,7 +10,7 @@ function fixture(name) {
 function execute(file, input, options = {}) {
   const context = vm.createContext({
     input: JSON.parse(JSON.stringify(input)),
-    console: {error() {}},
+    console: {error(message) { if (options.diagnostics) options.diagnostics.push(String(message)); }},
     toggles: options.toggles || {}
   });
   if (options.noFromEntries) vm.runInContext('Object.fromEntries = undefined', context);

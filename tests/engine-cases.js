@@ -2,6 +2,9 @@
 // Shared, fully synthetic inputs for comparison against real QuickJS execution.
 const {SCRIPTS, fixture, execute} = require('./helpers');
 const cases = [];
+for (const script of SCRIPTS) for (const item of require('./repair-cases').cases) {
+  if (!item.bettboxOnly || script === SCRIPTS[1]) cases.push({script, label: 'audit-' + item.label, input: item.input, options: item.options});
+}
 for (const script of SCRIPTS) {
   for (const name of ['direct-proxies', 'provider-only', 'mixed-provider', 'naming-conflict', 'dialer-loop']) {
     cases.push({script, label: name, input: fixture(name)});

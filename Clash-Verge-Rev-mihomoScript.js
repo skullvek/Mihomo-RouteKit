@@ -1,5 +1,5 @@
 // Clash Verge Rev 全局扩展脚本
-// Version: 2026.10.31-r2
+// Version: 2026.11.03-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：订阅 -> 全局扩展脚本（Script）
 
@@ -224,78 +224,89 @@ function main(config, profileName) {
   // 这里按节点名判断“这个地区到底有没有节点”，只给有节点的地区建组。
   // provider 远端节点在扩展脚本阶段枚举不到：只要有一处无法确认就退回“全部保留”，
   // 宁可多显示一个空组，也不误删有节点的地区。
-  const patternMatches = (pattern, name) => {
-    if (typeof pattern !== "string" || !pattern || typeof name !== "string") {
-      return false;
-    }
-    const flags = pattern.indexOf("(?i)") === 0 ? "i" : "";
-    const body = flags ? pattern.slice(4) : pattern;
-    // 内核允许用反引号分隔多个正则，任一命中即算匹配。
-    const parts = body.split("`");
-    for (let i = 0; i < parts.length; i += 1) {
-      if (!parts[i]) continue;
+  // 三值匹配：true / false / null（无法证明与 regexp2 等价）。
+  // 未知只允许保守保留地区，不能据此确认循环。自建地区表达式由脚本控制。
+  const patternMatches = (pattern, name, trusted = false) => {
+    if (!pattern) return false;
+    if (typeof pattern !== "string" || typeof name !== "string") return null;
+    let unknown = false;
+    for (const part of pattern.split("`")) {
+      const flags = part.indexOf("(?i)") === 0 ? "i" : "";
+      const body = flags ? part.slice(4) : part;
+      if (!trusted) {
+        // 只推断可确认的共同子集；不靠加 u 标志假装支持 .NET/Unicode。
+        const unescaped = body.replace(/\\[\\.^$|?*+()[\]{}\/-]/g, "");
+        if (/\\|\(\?(?!:)|\[\^|\-\[|\.|[\uD800-\uDFFF]/.test(unescaped) ||
+            (/[$^]/.test(body) && /[\r\n\u2028\u2029]/.test(name)) ||
+            (flags && /[^\x00-\x7F]/.test(body + name))) {
+          unknown = true;
+          continue;
+        }
+      }
       try {
-        if (new RegExp(parts[i], flags).test(name)) return true;
+        if (new RegExp(body, flags).test(name)) return true;
       } catch (_) {
-        // 无法编译的模式不参与判断，避免误判让整组消失。
+        unknown = true;
       }
     }
-    return false;
+    return unknown ? null : false;
   };
 
-  // 与内核 filter / exclude-filter 同语义：先看 filter，再看 exclude-filter。
+  const memberStatus = (proxy, options, forGroup = false, explicit = false, trusted = false) => {
+    const include = explicit || !options.filter ? true : patternMatches(options.filter, proxy.name, trusted);
+    const exclude = patternMatches(options["exclude-filter"], proxy.name, trusted);
+    const rawType = String(proxy.type || "").toLowerCase();
+    // provider 按原 YAML 类型，组按 AdapterType.String() 类型排除。
+    const type = forGroup
+      ? ({ ss: "shadowsocks", ssr: "shadowsocksr", select: "selector" }[rawType] || rawType.replace(/-/g, ""))
+      : rawType;
+    const excludedType = String(options["exclude-type"] || "").toLowerCase().split("|").includes(type);
+    if (include === false || exclude === true || (type && excludedType)) return false;
+    if (include === null || exclude === null || (options["exclude-type"] && !type)) return null;
+    return true;
+  };
+
   const nodeInGroup = (name, filter, excludeFilter) =>
-    patternMatches(filter, name) && !patternMatches(excludeFilter, name);
+    memberStatus({ name }, { filter, "exclude-filter": excludeFilter }, false, false, true) === true;
 
-  const providerAccepts = (name, provider) =>
-    (!provider.filter || patternMatches(provider.filter, name)) &&
-    !patternMatches(provider["exclude-filter"], name);
-
-  // 脚本能确认名称的节点：静态 proxies + 内联 provider payload。
-  // complete=false 表示还有远端 provider，节点名要等内核加载后才知道。
+  // 只有完整、可预测的 inline 清单可以证明某地区不存在。
+  // HTTP/file payload 是 fallback，不代表稍后加载的远端/文件清单。
   const collectKnownNodes = () => {
     const names = [];
-    const statics = Array.isArray(config.proxies) ? config.proxies : [];
-    for (const proxy of statics) {
-      if (!isProxyCandidate(proxy)) continue;
-      if (typeof proxy.name !== "string" || !proxy.name) continue;
-      if (PSEUDO_NODE_RE.test(proxy.name)) continue;
-      names.push(proxy.name);
+    for (const proxy of asArray(config.proxies)) {
+      if (!isProxyCandidate(proxy) || typeof proxy.name !== "string" || !proxy.name) continue;
+      if (!PSEUDO_NODE_RE.test(proxy.name)) names.push(proxy.name);
     }
-
     let complete = true;
     for (const providerName of providerNames) {
       const provider = providers[providerName];
-      if (!provider || typeof provider !== "object" || Array.isArray(provider)) {
+      if (!provider || provider.type !== "inline" || !Array.isArray(provider.payload)) {
         complete = false;
         continue;
       }
-      const override =
-        provider.override &&
-        typeof provider.override === "object" &&
-        !Array.isArray(provider.override)
-          ? provider.override
-          : {};
-      const payload = Array.isArray(provider.payload) ? provider.payload : null;
-      // 正则改名与表达式覆写会让最终节点名不可预测，只能当作未知。
-      if (
-        !payload ||
-        (override["proxy-name"] || []).length > 0 ||
-        (override["override-expr"] || []).length > 0
-      ) {
+      const override = provider.override || {};
+      if (typeof override !== "object" || Array.isArray(override) ||
+          [override["proxy-name"], override["override-expr"]].some(
+            (value) => value !== undefined && (!Array.isArray(value) || value.length > 0)
+          ) ||
+          [override["additional-prefix"], override["additional-suffix"]].some(
+            (value) => value !== undefined && typeof value !== "string"
+          )) {
         complete = false;
         continue;
       }
-      const prefix = override["additional-prefix"] || "";
-      const suffix = override["additional-suffix"] || "";
-      for (const proxy of payload) {
-        if (!isProxyCandidate(proxy)) continue;
-        if (typeof proxy.name !== "string" || !proxy.name) continue;
-        const name = `${prefix}${proxy.name}${suffix}`;
-        if (PSEUDO_NODE_RE.test(name)) continue;
-        // provider 自身的 filter / exclude-filter 决定它到底暴露哪些节点。
-        if (!providerAccepts(name, provider)) continue;
-        names.push(name);
+      for (const proxy of provider.payload) {
+        if (!proxy || typeof proxy.name !== "string" || !proxy.name ||
+            typeof proxy.type !== "string" || !proxy.type) {
+          complete = false;
+          continue;
+        }
+        // 内核先过滤原始 name/type，再应用 override；地区归属才看最终名。
+        const accepted = memberStatus(proxy, provider);
+        if (accepted === null) complete = false;
+        if (accepted !== true || !isProxyCandidate(proxy)) continue;
+        const name = `${override["additional-prefix"] || ""}${proxy.name}${override["additional-suffix"] || ""}`;
+        if (!PSEUDO_NODE_RE.test(name)) names.push(name);
       }
     }
     return { names, complete };
@@ -747,7 +758,6 @@ function main(config, profileName) {
     const renamed = new Map();
     const droppedReported = new Set();
     const aliases = new Set();
-    const visiting = new Set();
     const retained = [];
 
     const resolve = (name) => {
@@ -764,39 +774,40 @@ function main(config, profileName) {
         }
         return "国外流量";
       }
-      if (visiting.has(name)) {
-        report(`代理依赖存在循环：${name}，已切断该引用`);
-        return "REJECT";
-      }
       if (renamed.has(name)) return renamed.get(name);
       if (aliases.has(name)) return name;
       if (old.has(name)) {
-        visiting.add(name);
         let alias = name;
         if (newNames.has(name)) {
           alias = uniqueAlias(`__SKULL_DEP__${name}`);
         }
         used.add(alias);
         const copy = { ...old.get(name), name: alias, hidden: true };
+        // 先登记别名，引用保留与执行图判环分开，default-selected 只是偏好。
+        renamed.set(name, alias);
+        aliases.add(alias);
+        // use 必须是 provider 名称数组；畸形字段不能原样交给内核。
+        if (copy.use !== undefined && (!Array.isArray(copy.use) ||
+            copy.use.some((ref) => typeof ref !== "string" || !providerNames.includes(ref)))) {
+          report(`策略组「${alias}」的 use 非法，已规范化并在空组时回落 REJECT`);
+          copy.use = asArray(copy.use).filter((ref) => typeof ref === "string" && providerNames.includes(ref));
+          if (!copy.use.length) delete copy.use;
+          if (!asArray(copy.proxies).length && !asArray(copy.use).length &&
+              !copy["include-all"] && !copy["include-all-proxies"] && (!copy["include-all-providers"] || providerCount === 0)) {
+            copy.proxies = ["REJECT"];
+            copy["empty-fallback"] = "REJECT";
+          }
+        }
         if (Array.isArray(copy.proxies)) copy.proxies = copy.proxies.map(resolve);
         // default-selected 失效时由内核回退；只改写实际指向旧组的默认项。
         const defaultSelected = copy["default-selected"];
         if (preAlias.has(defaultSelected) || old.has(defaultSelected) || nodeAliases.has(defaultSelected) || missingRegionNames.has(defaultSelected)) {
           copy["default-selected"] = resolve(defaultSelected);
         }
-        visiting.delete(name);
-        renamed.set(name, alias);
-        aliases.add(alias);
         retained.push(copy);
         return alias;
       }
-      if (nodes.has(name)) {
-        visiting.add(name);
-        const proxy = nodes.get(name);
-        rewrite(proxy, "dialer-proxy");
-        visiting.delete(name);
-        return name;
-      }
+      if (nodes.has(name)) return name;
       // 脚本自建的策略组名本身是合法引用目标（listeners / ntp / rule-provider 都可能指向它），
       // 必须放行；provider 动态节点在扩展脚本阶段无法枚举，也只能放行。
       if (newNames.has(name) || providerCount > 0) return name;
@@ -804,11 +815,7 @@ function main(config, profileName) {
       return "REJECT";
     };
     const rewrite = (object, key) => {
-      if (!object || !object[key]) return;
-      const original = object[key];
-      const resolved = resolve(original);
-      // 深层递归可能已把这个字段切成 REJECT，外层不能再写回原来的环。
-      if (object[key] === original) object[key] = resolved;
+      if (object && object[key]) object[key] = resolve(object[key]);
     };
     for (const proxy of nodes.values()) rewrite(proxy, "dialer-proxy");
     for (const name of providerNames) {
@@ -829,45 +836,56 @@ function main(config, profileName) {
     rewrite(config.ntp, "dialer-proxy");
     config["proxy-groups"].push(...retained);
 
-    // 新组的 include-all / 手动节点也可能让 dialer-proxy 回到节点自身。
-    // 包含可见的 provider.payload；远端尚未加载的节点无法在这里枚举。
+    // 原始组引用参与内核拓扑排序，即便排除表达式未知，也必须切断纯组环。
+    // 节点 dialer 不参与此步骤；不能把被排除的节点误当成执行边。
     const groups = new Map(config["proxy-groups"].map((group) => [group.name, group]));
-    const regex = (pattern) => new RegExp(String(pattern).replace(/^\(\?i\)/, ""), String(pattern).startsWith("(?i)") ? "i" : "");
-    const matches = (proxy, options) => {
-      try {
-        const match = (pattern) => String(pattern).split("`").some((part) => regex(part).test(proxy.name));
-        const types = String(options["exclude-type"] || "").toLowerCase().split("|");
-        return (!options.filter || match(options.filter)) &&
-          (!options["exclude-filter"] || !match(options["exclude-filter"])) &&
-          !types.includes(String(proxy.type || "").toLowerCase());
-      } catch (_) {
-        // 无法按 JS 正则确认成员时不猜测，避免误切合法线路。
-        return false;
-      }
+    const visitingGroups = new Set();
+    const visitedGroups = new Set();
+    const checkGroup = (group) => {
+      if (visitedGroups.has(group.name)) return;
+      visitingGroups.add(group.name);
+      group.proxies = asArray(group.proxies).map((ref) => {
+        if (!groups.has(ref)) return ref;
+        if (visitingGroups.has(ref)) {
+          report(`策略组「${group.name}」存在纯组循环，已将引用「${ref}」替换为 REJECT`);
+          return "REJECT";
+        }
+        checkGroup(groups.get(ref));
+        return ref;
+      });
+      if (!group.proxies.length) delete group.proxies;
+      visitingGroups.delete(group.name);
+      visitedGroups.add(group.name);
     };
+    for (const group of groups.values()) checkGroup(group);
+    const matches = (proxy, options, explicit = false) =>
+      memberStatus(proxy, options, true, explicit, newNames.has(options.name)) === true;
     const visibleNodes = new Map([...nodes].map(([name, proxy]) => [name, { proxy, owner: proxy }]));
     for (const name of providerNames) {
       const provider = providers[name];
       if (!provider || !Array.isArray(provider.payload)) continue;
       const override = provider.override || {};
-      // 正则改名及表达式覆写由内核执行，脚本无法可靠确定最终名称/依赖。
-      if ((override["proxy-name"] || []).length || (override["override-expr"] || []).length) continue;
+      if ([override["proxy-name"], override["override-expr"]].some(
+        (value) => value !== undefined && (!Array.isArray(value) || value.length > 0)
+      )) continue;
       for (const proxy of provider.payload) {
-        if (!proxy || typeof proxy.name !== "string" || !matches(proxy, provider)) continue;
+        if (!proxy || typeof proxy.name !== "string" || memberStatus(proxy, provider) !== true) continue;
         const effective = { ...proxy, name: `${override["additional-prefix"] || ""}${proxy.name}${override["additional-suffix"] || ""}` };
         const owner = typeof override["dialer-proxy"] === "string" ? override
           : provider["dialer-proxy"] ? provider : proxy;
-        // provider 节点不属于全局命名空间，独立身份避免与同名组/节点混淆。
         visibleNodes.set({}, { proxy: effective, owner, providerName: name });
       }
     }
-    if (![...visibleNodes.values()].some((entry) => entry.owner["dialer-proxy"])) return;
     const groupMembers = new Map();
     for (const group of groups.values()) {
-      const members = Array.isArray(group.proxies) ? [...group.proxies] : [];
+      // 显式成员只应用 excludes/type，group.filter 只影响自动加入的成员。
+      const members = asArray(group.proxies).filter((name) => {
+        const proxy = nodes.get(name) || groups.get(name) || { name, type: builtins.has(name) ? name : "" };
+        return matches(proxy, group, true);
+      });
       for (const [id, entry] of visibleNodes) {
         const included = entry.providerName
-          ? group["include-all"] || group["include-all-providers"] || (group.use || []).includes(entry.providerName)
+          ? group["include-all"] || group["include-all-providers"] || asArray(group.use).includes(entry.providerName)
           : group["include-all"] || group["include-all-proxies"];
         if (included && matches(entry.proxy, group)) members.push(id);
       }

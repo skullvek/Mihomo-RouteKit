@@ -11,7 +11,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,9 +25,27 @@ jobs:
           node --check Clash-Verge-Rev-mihomoScript.js
           node --check Bettbox-mihomoScript.js
           node --check FlClash-mihomoScript.js
+          for script in tests/*.js; do node --check "$script"; done
       - name: Validate behavior, references and rule files
-        run: node --test tests/validate.js
+        run: node --test tests/validate.js tests/repair.test.js
       - name: Install real QuickJS engine
         run: python -m pip install quickjs==1.19.4
       - name: Check QuickJS behavior against Node
         run: python tests/quickjs_check.py
+      - name: Download pinned Mihomo v1.19.33 (Linux amd64)
+        run: |
+          mkdir -p "$RUNNER_TEMP/mihomo"
+          curl --fail --location --retry 3 \
+            https://github.com/MetaCubeX/mihomo/releases/download/v1.19.33/mihomo-linux-amd64-v1.19.33.gz \
+            --output "$RUNNER_TEMP/mihomo/mihomo.gz"
+          gunzip "$RUNNER_TEMP/mihomo/mihomo.gz"
+          chmod 755 "$RUNNER_TEMP/mihomo/mihomo"
+      - name: Validate synthetic full configs and isolated core runtime membership
+        run: node tests/mihomo-ci.js "$RUNNER_TEMP/mihomo/mihomo"
+      - name: Upload synthetic core evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-mihomo-evidence
+          path: ${{ runner.temp }}/mihomo-ci-*/
+          retention-days: 7

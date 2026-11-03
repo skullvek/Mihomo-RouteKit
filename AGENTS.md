@@ -1,6 +1,6 @@
 # AGENTS.md — 维护说明（面向 AI 代理）
 
-本文件是给在本仓库里动手的代理 / 自动化看的操作手册。人类用户看 [README.md](./README.md)；**先读完本文件再改代码**，改完按第 6、7 节验证与提交。
+本文件是给在本仓库里动手的代理 / 自动化看的操作手册。人类用户看 [README.md](./README.md)；**先读完本文件再改代码**。本地修改源码，测试、构建与真实内核验证交给云端 CI；提交与发布按第 6、7 节执行，结果必须读取实际 CI 记录。
 
 - 仓库：`skullvek/Mihomo-RouteKit`
 - 内容：三份 Mihomo 覆写脚本 + 自维护规则补丁 + 回归测试 + 文档
@@ -22,10 +22,12 @@
 | `rules/direct.list` | `SKULL_CustomDirect`，先于 CN 分类直连 | 只写域名，一行一个 |
 | `rules/proxy.list` | `SKULL_CustomProxy`，先于 CN 分类走 `国外流量` | 同上 |
 | `rules/fake-ip-filter.list` | `SKULL_FakeIPFilter`，仅排除 Fake-IP | 不改变直连/代理去向 |
-| `tests/validate.js` | `node --test` 回归（65 项） | 契约、开关组合、地区裁剪、三端一致性、规则文件格式 |
+| `tests/validate.js` | `node --test` 既有回归（74 项） | 契约、开关组合、地区裁剪、三端一致性、规则文件格式 |
 | `tests/fixtures/*.json` | 5 份合成订阅 | 全部假数据，**不得写入真实订阅** |
+| `tests/repair.test.js` / `tests/repair-cases.js` | 七项审计行为回归与共享合成输入 | 先补审计复现，再改生产脚本；含真实循环、开关碰撞对照 |
+| `tests/mihomo-ci.js` | 固定 v1.19.33 真实内核门禁 | 完整合成配置 `-t` 成功日志 + 隔离运行态成员与输出 dialer |
 | `tests/engine-cases.js` + `tests/quickjs_check.py` | Node ↔ 真实 QuickJS 对照 | 只在 CI 跑（本地通常没有 `quickjs`） |
-| `.github/workflows/validate.yml` | push / PR / 手动触发 | 语法 → 测试 → QuickJS |
+| `.github/workflows/validate.yml` | push / PR / 手动触发 | 语法 → Node → QuickJS → 固定 Mihomo |
 | `assets/proxy-groups.png` | README「结构总览」用的结构图 | 组顺序或默认值变了必须重画，**图不能与脚本矛盾** |
 | `README.md` | 用户文档 | 见第 5 节的同步点清单 |
 | `PROGRESS.md` | 维护进度与变更日志 | 每次改动追加一行 |
@@ -44,7 +46,7 @@
    | AI 三组 | `select` | 自动选择 / 全球手动 / 订阅实际地区的聚合组 | **`default-selected: 全球手动`**，无 `DIRECT` |
    | Google / GitHub / X / YouTube / Netflix / Telegram | `select` | 上述 + `DIRECT` | **`default-selected: 全球手动`** |
    | Microsoft / Apple / 游戏平台 | `select` | 同上 | **`default-selected: DIRECT`** |
-   | 地区聚合 1–9 | `select` | 该地区隐藏自动组 + 该地区全部节点；**订阅里没有该地区节点时不建组**；归属只看节点名第一个 `｜` / `|` 之前的部分，中转标签不参与判定 | 首位 |
+   | 地区聚合 1–9 | `select` | 该地区隐藏自动组 + 该地区全部节点；**完整且可确认的清单里没有该地区节点时不建组；未知时保留全部地区**；归属只看节点名第一个 `｜` / `|` 之前的部分，中转标签不参与判定 | 首位 |
    | 地区自动 1–9 | `url-test` | `hidden: true`，只供聚合组调用；与聚合组一一对应 | — |
 
    `default-selected` 是字符串成员名；`select` 组没有它就从选项第一项开始。改动默认值时必须在 `tests/validate.js` 的 `core design contracts` 里加断言。
@@ -53,7 +55,8 @@
    改顺序前先想清楚谁会被提前接管（典型事故：AI 被 Google 抢走、Xbox 被 Microsoft 抢走、国内游戏走代理）。
 6. **DNS 结构**：fake-ip `198.18.0.1/16` + `blacklist`（只继承订阅中同为 blacklist 的 filter）；国内域名/自定义直连走国内 DoH `#DIRECT`；默认与境外走 Cloudflare/Google DoH `#国外流量`；AI 域名 `nameserver-policy` 跟随各自 AI 组；`direct-nameserver` 与 `proxy-server-nameserver` 用国内 DoH（后者防 `nameserver → 国外流量 → 节点域名` 循环）。三端 `direct-nameserver-follow-policy: true`：直连拨号解析也遵守 `nameserver-policy`（LAN → `system`，AI/补丁域名跟随各自组），未命中 policy 的域名回落 `direct-nameserver`，内网主机名不外发。
 7. **`rules/*.list` 只写域名**：`+.example.com` 匹配主域与全部子域，裸域名精确匹配。不写 `DOMAIN-SUFFIX,`、策略名或 `payload:`。CI 会校验格式、重复行、直连/代理冲突，并拒绝把共享父域整体代理（如 `mchost.guru`、`aliyuncs.com`）。
-8. **不得提交**真实订阅 URL、节点密码、UUID、Token、Cookie；测试数据一律用 `*.example` 假域名。
+8. **provider/判环语义**：provider 先对原名/原 YAML 类型过滤，再应用 override；只有可完整枚举且过滤/改名语义可靠的 inline payload 可裁剪，HTTP/file payload 仅 fallback。正则匹配为 true/false/未知，未知不得用于删地区或认定循环。显式组成员不应用 `filter`，仅应用排除式与 AdapterType 类型；保留引用与有效执行图分离，纯组拓扑环仍须切断。`default-selected` 是偏好。畸形 `use` 必须规范化、告警，空组用 REJECT，不能只避开 JS 异常。
+9. **不得提交**真实订阅 URL、节点密码、UUID、Token、Cookie；测试数据一律用 `*.example` 假域名。
 
 ### 3.4 三端允许的差异
 
@@ -90,11 +93,13 @@
 
 ## 6. 验证
 
+本轮及当前维护工作流只修改本地源码；测试、构建与真实内核执行均交给云端 CI，不在本机运行。下面是 CI/审核命令；不得把新增验证代码当成已通过。
+
 ```bash
 node --check Clash-Verge-Rev-mihomoScript.js
 node --check Bettbox-mihomoScript.js
 node --check FlClash-mihomoScript.js
-node --test tests/validate.js
+node --test tests/validate.js tests/repair.test.js
 
 # 打印每个 fixture 实际建出的地区组，确认裁剪逻辑
 node -e 'const {execute,SCRIPTS,fixture}=require("./tests/helpers");for(const f of SCRIPTS){for(const n of ["direct-proxies","provider-only","mixed-provider"]){const c=execute(f,fixture(n));console.log(f,n,c["proxy-groups"].length,c["proxy-groups"].map(g=>g.name).filter(x=>/聚合$|^其他地区$/.test(x)).join(","));}}'
@@ -104,7 +109,8 @@ node -e 'const {execute,SCRIPTS}=require("./tests/helpers");for(const f of SCRIP
 ```
 
 - QuickJS 对照需要 `python -m pip install quickjs`；Hermes 自带 venv 通常装不了，**交给 CI**（`gh run list -R skullvek/Mihomo-RouteKit -L 3`），并在汇报里说明「CI 通过」而不是「本地通过」。
-- CI 不访问远端规则 URL，也不连真实节点：远端可达性、客户端最终覆写行为、TUN/DNS 泄露只能上设备验证。
+- CI 下载固定 `v1.19.33` Linux amd64 `.gz` 内核，运行 `node tests/mihomo-ci.js "$RUNNER_TEMP/mihomo/mihomo"`。完整合成配置保留规则/DNS 引用但使用本地规则文件；`-t` 必须同时满足退出码和 `test is successful` 日志。
+- 运行态检查输出 dialer 与 `/proxies` 成员，含 HTTP fallback 切换日本/美国。副本关闭 DNS/TUN/NTP/入站端口、移除远端规则、MATCH REJECT、禁用测速（组转 select / provider health-check 关闭）；只从回环合成服务器以显式 DIRECT 下载，每个子进程 finally 停止并 wait，失败留配置/日志。CI 不连真实节点；远端规则可达性、客户端后处理、TUN/DNS 泄露仍需设备验证。
 
 ## 7. 版本号与提交
 
@@ -123,7 +129,7 @@ node -e 'const {execute,SCRIPTS}=require("./tests/helpers");for(const f of SCRIP
 - **Mermaid 10 与 11 的布局宽度不同**：GitHub 用 10.x，本地验证要以 10.9.1 为准；宽度尽量压在 950px 以内，否则被缩成小字。
 - **GitHub 的 Mermaid 在跨域 iframe 里渲染**：页面 DOM 查不到图内 `<svg>` 是正常的，判断标准是 `iframe[src*="markdown/mermaid"]` 的数量。
 - **客户端会在脚本之后回写自己的设置**：`mode`、`unified-delay`、顶层 `ipv6`、`find-process-mode`、TUN 全部以 App 为准，脚本里写了也可能被覆盖——不要承诺「脚本已强制」。
-- **别写死 34 组**：地区组数量由订阅节点决定——`direct-proxies.json` 只有香港 / 美国 → 20 组，`provider-only.json` 只有 NRT → 18 组，`mixed-provider.json` 是新加坡 + 台湾 → 20 组。断言组数前先看 fixture 里到底有哪些地区；只有「无法枚举的远端 provider」才会退回 9 个地区全保留。
+- **别写死 34 组**：地区组数量由订阅节点决定——`direct-proxies.json` 只有香港 / 美国 → 20 组，`provider-only.json` 只有 NRT → 18 组，`mixed-provider.json` 是新加坡 + 台湾 → 20 组。断言组数前先看 fixture 里到底有哪些地区；远端/file fallback、未知或畸形 inline 清单、不确定 regexp2/改名都会退回 9 个地区全保留。
 - **Bettbox / FlClash 的 DNS 覆写**：客户端一旦开启 DNS 覆写，脚本的 `nameserver-policy`、`direct-nameserver` 会被重新生成覆盖，README 已要求用户关闭，排查问题时先问这一项。
 
 ## 8.1 地区归属的两个易错点

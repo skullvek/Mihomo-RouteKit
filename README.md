@@ -44,7 +44,7 @@
 | 节点整理 | 过滤公告 / 流量提示等伪节点；内联节点按地区分桶、同地区保留订阅原顺序；欧洲与「其他地区」再按国家分组 |
 | Provider | 自动补齐缺失的 health-check 参数，同时尊重机场显式关闭的健康检查 |
 | DNS | 国内查询直连；默认国外查询经 `国外流量`；提供独立 `direct-nameserver` |
-| 兼容性 | 自动保留真正被节点、provider、listener、tunnel、NTP 等引用的旧策略组依赖 |
+| 兼容性 | 保留必要旧组依赖，按有效成员判环；不确定正则保守处理，非法 `use` 就地规范化 |
 | Bettbox | v1.18.8+ 提供 13 个可视化覆写开关 |
 | TUN 管理 | Clash Verge Rev 仅补齐缺失的 TUN 默认项；Bettbox / FlClash 的 VPN / TUN 由 App 管理 |
 
@@ -52,6 +52,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-11-03 | 修复七项审计问题：旧组按实际排除条件判环、三端统一 AdapterType 与保守正则语义、provider 原名/原类型过滤后再改名、HTTP/file fallback 与不确定正则不再裁掉地区、规范化非法 `use`。保留真实循环的 REJECT 降级；新增 Node/QuickJS 回归与 Mihomo v1.19.33 完整配置及隔离运行态 CI 门禁。三版统一为 `2026.11.03-r1`；本次云端验证待执行。 |
 | 2026-10-31 | 欧洲与「其他地区」在地区分桶后再按节点名开头的国旗做二级分组，同一国家的节点连在一起（机场按线路类型排序时 `🇩🇪德国01｜三网优化` 与 `🇩🇪德国01｜HK｜三网优化` 不再被别的国家隔开）；国家内部仍按订阅原顺序。三版版本标识统一为 `2026.10.31-r2`。 |
 | 2026-10-31 | 地区判定改为「只看节点名第一个 `｜` / `|` 之前的部分」：`🇯🇵日本01｜HK｜三网优化` 这类带中转标签的节点归自己的地区，不再被中转地抢到香港聚合；未收录国旗（`🇧🇷` / `🇹🇷` 等）归「其他地区」。`全球手动` 同一地区内改为保留订阅原顺序，不再按名称重排。三版版本标识统一为 `2026.10.31-r1`。 |
 | 2026-10-30 | 基础组 `国外流量` 改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`漏网之鱼` 的首选出口保持 `国外流量`。三版版本标识统一为 `2026.10.30-r2`。 |
@@ -67,7 +68,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.10.31-r2`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.11.03-r1`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -100,9 +101,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.10.31-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.10.31-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.10.31-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.03-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.11.03-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.11.03-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -305,9 +306,10 @@ AI 组选项仅包含：
 
 **这 9 个地区组不是固定出现的。** 脚本在覆写时先扫描订阅节点，只有真正存在该地区节点的地区才建组：机场只卖新加坡时，主界面只有 `新加坡聚合`，`香港聚合` / `日本聚合` / … / `其他地区` 都不会出现，AI 组、服务组与 `国外流量` 的选项也随之收缩。
 
-- 判定用的正则与优先级跟地区组自身的 `filter` / `exclude-filter` 完全一致，所以不会出现“组存在但永远是空”的情况。
-- `其他地区` 只在订阅里存在无法归类的节点（例如土耳其、巴西）时出现。
-- `proxy-providers` 的远端节点在扩展脚本阶段枚举不到：只要订阅里有无法确认的 provider，脚本保留全部 9 个地区组，宁可多显示一个空组，也不误删有节点的地区。
+- 确定性裁剪时，地区判定正则与优先级沿用地区组自身的 `filter` / `exclude-filter`；未知清单则保守保留入口，个别组可能暂时为空。
+- 清单可确认时，`其他地区` 只在存在无法归类的节点（例如土耳其、巴西）时出现；清单未知时也保留。
+- 只有 payload 可完整枚举、字段有效、改名可预测且过滤语义可确认的 `type: inline` provider，才用于确定性裁剪。`filter` / `exclude-filter` / `exclude-type` 先匹配原始名称和 YAML 类型，前后缀改名只影响后续地区归属；地区优先级不变。
+- HTTP/file provider 即使带 payload，也只是 fallback，不能当成完整清单；存在任何未知清单、正则改名或无法可靠模拟的 regexp2 表达式（例如 `\p{L}`、Unicode `\w`、.NET 语法、JS 编译失败）时，保守保留全部 9 个地区组，等待内核加载成员。这样远端更新到日本、美国等地区后仍有对应入口。
 - 跳过地区时会往客户端日志打一行 `[SKULL] 订阅里没有这些地区的节点，已跳过对应策略组：…`，便于确认是“机场没这个地区”还是“识别没匹配上”。
 
 ### 隐藏地区自动组（1–9 个）
@@ -600,7 +602,10 @@ FlClash v0.9.0+ 应取消已选的 DNS 覆写字段，并关闭“追加系统 D
 
 - 重复名称：跳过重复项
 - 旧组与订阅节点重名：改用 `__SKULL_OLD__...` 作为隐藏组保留
-- 依赖成环或指向不存在的目标：切断该引用并替换为 `REJECT`
+- 依赖成环或指向不存在的目标：切断该引用并替换为 `REJECT`；纯组引用环单独切断，保证配置可加载
+- 显式 `proxies` 只应用组的 `exclude-filter` / AdapterType `exclude-type`，组 `filter` 不影响它们；自动成员再应用 `filter`。已被排除的成员不会触发误切，`default-selected` 只表示偏好，不是执行边
+- 对无法确认的自定义 regexp2 排除式，不据此认定节点在组内，不破坏合法 dialer；可确定的节点/组/provider 循环仍按 REJECT 降级
+- 旧组 `use` 不是 provider 名称数组时记录诊断并规范化；否则为空的组回落 `REJECT`，有效 include-all 组保留
 - provider 显式关闭 `health-check`：遵循原设置，不改写
 
 > [!NOTE]
@@ -867,20 +872,25 @@ GitHub Actions 在 push、pull request 和手动触发时运行：
 - 三份 JS 的语法检查，以及合成订阅中的内联节点、provider-only、混合、重名、旧组依赖与拨号循环场景
 - Rule Provider / 策略组 / DNS 引用完整性、下载 URL 结构与本仓库文件映射、规则文件格式及冲突；国际服务域名覆盖、共享父域与国内版的排除边界
 - AI 与国外流量的代理约束（`国外流量` 不得含 `DIRECT` 且默认 `全球手动`）、Microsoft / Apple / 游戏平台的 `default-selected: DIRECT`、漏网之鱼默认出口和三端一致性
-- Bettbox 的 13 个单独开关及全部关闭场景；FlClash 的客户端字段保留、NTP、当前仓库补丁与跨端规则一致性；真实 QuickJS 引擎与 Node 的输出对照
+- Bettbox 的 13 个单独开关、全部关闭及同名节点碰撞场景；FlClash 的客户端字段保留、NTP、当前仓库补丁与跨端规则一致性；七项审计复现与真实循环正向对照，真实 QuickJS 与 Node 对拍
+- 固定 Mihomo v1.19.33 Linux amd64：5 份既有合成 fixture 及修复用例逐端输出完整配置，保留规则与 DNS 引用、用本地合成规则文件替换远端下载，`-t` 同时检查退出码及 `test is successful` 日志
+- 隔离运行态 `/proxies` 校验排除成员、类型/Unicode、provider 改名过滤/类型排除、HTTP fallback 更新后的日本/美国成员与畸形 `use`；另行断言脚本输出 dialer，避免仅检查成员遗漏误切
 
-本地运行：
+验证由云端 CI 执行（本轮不运行本地测试、构建或内核），命令如下：
 
 ```bash
 node --check Clash-Verge-Rev-mihomoScript.js
 node --check Bettbox-mihomoScript.js
 node --check FlClash-mihomoScript.js
-node --test tests/validate.js
+node --test tests/validate.js tests/repair.test.js
 python -m pip install quickjs==1.19.4
 python tests/quickjs_check.py
+node tests/mihomo-ci.js "$RUNNER_TEMP/mihomo/mihomo"
 ```
 
-测试配置全部使用示例地址与假密码，不需要真实订阅。CI 不访问远端规则 URL，因此 PR 新增的补丁不需要提前发布；远端资源可达性、真实节点连接、客户端最终覆写行为仍需在设备上检查。QuickJS 对照不等同于 Clash Verge Rev 的 Boa 引擎或客户端端到端验证。
+测试配置全部使用示例地址与假密码。CI 仅下载固定版本内核，不访问远端规则 URL 或真实节点；运行态副本关闭 DNS、TUN、NTP 和入站端口，移除 rule providers，使用 `MATCH,REJECT`。组临时改为 select 以关闭周期测速，provider health-check 关闭；合成 HTTP provider 只从回环服务器经受控直连路径（DIRECT，或有效成员仅 DIRECT 的测试组）下载。`-t` 使用保留原组类型、规则和 DNS 结构的完整合成配置。每个临时内核均在 finally 中停止并等待回收，失败时上传合成配置和日志。
+
+这些检查验证脚本行为与固定内核的组成员语义；远端资源可达性、真实节点连接、设备 TUN/DNS 泄露和客户端最终覆写仍需设备确认。QuickJS 对照不等同于 Clash Verge Rev 的 Boa 引擎或客户端端到端验证。结构图保留：本次没有改变主组顺序、名称或默认值，图示仍是保守保留 9 地区的情形。
 
 ---
 
