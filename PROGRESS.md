@@ -11,7 +11,7 @@
 | 分流规则 | 48 / 50 / 50（CVR / Bettbox / FlClash） |
 | Rule Providers | 41（38 上游 `.mrs` @meta + 3 自维护 `domain/text`） |
 | 回归测试 | Node 179/179（既有 74 + 审计回归 105）；QuickJS 149 用例；Mihomo v1.19.33 完整配置及隔离成员 86 用例 |
-| 最近 CI | success — `Validate scripts`，run 42171120311，head `9940c01`（`2026.11.06-r2`；Node 179/179 + QuickJS 149 + Mihomo 86） |
+| 最近 CI | success — `Validate scripts`，run 42172021276，head `63b5765`（纯文档改动同步验证：Node 179/179、QuickJS 149、Mihomo v1.19.33 `-t` + 隔离运行态全部通过；上一轮行为变更验证为 run 42171120311） |
 | 结构图 | `assets/proxy-groups.png` 已重绘：26 组顺序（含 `流媒体` / `WhatsApp`），仍对应 9 个地区全有的情形 |
 
 ## 变更记录（新 → 旧）
