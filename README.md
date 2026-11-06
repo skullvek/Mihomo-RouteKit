@@ -48,55 +48,6 @@
 | Bettbox | v1.18.8+ 提供 14 个可视化覆写开关 |
 | TUN 管理 | Clash Verge Rev 仅补齐缺失的 TUN 默认项；Bettbox / FlClash 的 VPN / TUN 由 App 管理 |
 
-### 最近维护
-
-| 日期 | 变更 |
-| --- | --- |
-| 2026-11-06 | `WhatsApp` 升级为全流量接管：新增 `SKULL_MetaIP`（`facebook.mrs`，123 条 Meta 网段）IP 规则，覆盖信令、CDN 与通话中继；桌面端新增两条 `PROCESS-NAME` 规则（`WhatsApp.exe` / `WhatsApp`），把 WhatsApp 进程的 TCP/UDP 全部收进该组，位置在全部域名组之前。规则 48 / 50 / 50，Rule Providers 41。三版版本标识统一为 `2026.11.06-r2`；本次云端验证已通过（Node 179 项、QuickJS 149 用例、Mihomo 86 用例；[CI 记录](https://github.com/skullvek/Mihomo-RouteKit/actions/runs/42171120311)）。 |
-| 2026-11-06 | 「Netflix」策略组扩为「流媒体」，规则集由 1 个增至 6 个（Netflix / Disney+ / Prime Video / HBO Max / Spotify / TikTok），Netflix IP 规则随之改指；新增 `WhatsApp` 独立策略组与 `whatsapp.mrs` 规则集。服务组由 9 个增至 10 个，固定主策略组 17 个，全地区机场共 35 组、规则 45 / 47 / 47。`流媒体` 与 `WhatsApp` 首次默认均为 `全球手动`。三版版本标识统一为 `2026.11.06-r1`；本次云端验证已通过（Node 179 项、QuickJS 149 用例、Mihomo 86 用例；[CI 记录](https://github.com/skullvek/Mihomo-RouteKit/actions/runs/42168983038)）。 |
-| 2026-11-03 | 修复七项审计问题：旧组按实际排除条件判环、三端统一 AdapterType 与保守正则语义、provider 原名/原类型过滤后再改名、HTTP/file fallback 与不确定正则不再裁掉地区、规范化非法 `use`。保留真实循环的 REJECT 降级；新增 Node/QuickJS 回归与 Mihomo v1.19.33 完整配置及隔离运行态 CI 门禁。三版统一为 `2026.11.03-r1`；本次云端验证已通过（Node 179 项、QuickJS 148 用例、Mihomo 86 用例；[CI 记录](https://github.com/skullvek/Mihomo-RouteKit/actions/runs/41624420766)）。 |
-| 2026-10-31 | 欧洲与「其他地区」在地区分桶后再按节点名开头的国旗做二级分组，同一国家的节点连在一起（机场按线路类型排序时 `🇩🇪德国01｜三网优化` 与 `🇩🇪德国01｜HK｜三网优化` 不再被别的国家隔开）；国家内部仍按订阅原顺序。三版版本标识统一为 `2026.10.31-r2`。 |
-| 2026-10-31 | 地区判定改为「只看节点名第一个 `｜` / `|` 之前的部分」：`🇯🇵日本01｜HK｜三网优化` 这类带中转标签的节点归自己的地区，不再被中转地抢到香港聚合；未收录国旗（`🇧🇷` / `🇹🇷` 等）归「其他地区」。`全球手动` 同一地区内改为保留订阅原顺序，不再按名称重排。三版版本标识统一为 `2026.10.31-r1`。 |
-| 2026-10-30 | 基础组 `国外流量` 改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`漏网之鱼` 的首选出口保持 `国外流量`。三版版本标识统一为 `2026.10.30-r2`。 |
-| 2026-10-30 | 地区策略组改为按订阅实际节点动态出现：机场没有某个地区的节点时不再显示该地区聚合组与隐藏自动组，AI 组 / 服务组 / `国外流量` 的选项同步收缩；订阅里存在无法枚举的 `proxy-providers` 远端节点时保留全部 9 个地区组。三版版本标识统一为 `2026.10.30-r1`。 |
-| 2026-10-29 | ChatGPT / Claude / Gemini / NotebookLM 三个 AI 组改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」，仍不提供 `DIRECT`；`rules/direct.list` 补入 Wise 汇款域名（`wise.com` / `transferwise.com` / `wise.us` / `wise.jobs` / `wi.se`），业务与 DNS 都直连，不再经 `国外流量`。三版版本标识统一为 `2026.10.29-r1`。 |
-| 2026-10-26 | 复核国内识别：geosite `cn` 已收录 11 万条域名（含全部 `.cn`），抽查 356 个国内主流域名 / App 后端，仅 `cnbeta.com` 被 `geolocation-!cn` 误判为国外走代理；`rules/direct.list` 补入 `cnbeta.com` / `cnbetacdn.com` 与 11 个国内统计、广告、推送后端。三版版本标识统一为 `2026.10.26-r3`。 |
-| 2026-10-26 | Clash Verge Rev 的 `direct-nameserver-follow-policy` 改为 `true`：直连拨号解析也遵守 `nameserver-policy`，LAN / 私有域名走系统 DNS，内网主机名不再被发往公共 DNS；未命中 policy 的直连域名仍回落 `direct-nameserver`（国内 DoH）。三版版本标识统一为 `2026.10.26-r2`。 |
-| 2026-10-26 | 三端补订阅字段类型防御：`listeners` / `tunnels` / `inline payload` 不是数组时不再抛错（此前会因 `for...of` 抛异常导致整份覆写被丢弃）；欧洲识别补奥地利、比利时、捷克、丹麦、葡萄牙、希腊、冰岛、卢森堡 8 个中文国名与 7 个城市名；Bettbox 只对仍存在的脚本组名做节点改名；`profile` 为非对象时不再被对象展开；统一 `RULESET_SIZE_LIMIT` 常量名。三版版本标识统一为 `2026.10.26-r1`。 |
-| 2026-10-25 | Google / GitHub / X / YouTube / Netflix / Telegram 六个服务组改为 `default-selected: 全球手动`，首次加载默认选中「全球手动」；Microsoft / Apple / 游戏平台 仍默认 `DIRECT`。三版版本标识统一为 `2026.10.25-r1`。 |
-| 2026-10-22 | 同时被上游 CN 分类收录的国际服务域名改由 `SKULL_CustomProxy` 前置接管（WorkBuddy / CodeBuddy、Qoder、Qwen、Z.ai、MiniMax、Moonshot、TRAE 与 Coze 国际版、Lark / WPS、Kling / WeTV / iQIYI 国际版、国际云接口），业务与 DNS 均经 `国外流量`，且不整体代理 `mchost.guru`、`aliyuncs.com` 等共享父域；三版脚本版本标识统一为 `2026.10.22-r2`，运行时补丁 URL 与 README 链接迁移到 `skullvek/Mihomo-RouteKit`。 |
-| 2026-10-18 | 新增 FlClash 独立扩展脚本；保留现有策略组与 41 条规则、NTP 直连修复；适配客户端 DNS / TUN / 选择缓存管理，补丁 URL 使用当前 `skullvek` 仓库；纳入 Node / QuickJS 回归。 |
-| 2026-10-15 | 优化两端伪节点过滤，排除客服邮箱、订阅更新提示与明确的 TG / Telegram 群组和频道公告；避免误排真实的 TG 专线节点。 |
-| 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
-| 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
-
-三版脚本顶部版本标识当前统一为 `2026.11.06-r2`，并非每次补丁提交都修改版本标识。
-
-## 仓库目录与日常维护
-
-| 目录 / 文件 | 用途 | 日常使用时需要做什么 |
-| --- | --- | --- |
-| [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) | 桌面端覆写入口 | 将全文放入 Clash Verge Rev 全局扩展脚本 |
-| [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) | Android 端覆写入口 | 将全文放入 Bettbox 脚本覆写 |
-| [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) | FlClash 多平台扩展入口 | 从脚本管理导入后，在机场订阅的「扩展 → 脚本」中选中 |
-| [`rules/`](./rules/) | 自维护的直连、代理与 Fake-IP 补丁 | Mihomo 自动下载；需要修正域名时编辑对应 `.list` 文件 |
-| [`.github/`](./.github/workflows/validate.yml) | GitHub Actions 自动验证配置 | 每次提交自动运行，无需导入客户端 |
-| [`tests/`](./tests/) | 示例订阅与脚本回归测试 | 修改脚本时验证行为，无需导入客户端 |
-| [`assets/`](./assets/) | README 插图（策略组结构图） | 结构变化时替换对应 PNG，文件名与 README 引用保持一致 |
-| [`AGENTS.md`](./AGENTS.md) | 维护说明（面向 AI 代理） | 改脚本 / 规则 / 文档前先读：契约、验证命令、README 同步点 |
-| [`PROGRESS.md`](./PROGRESS.md) | 维护进度与变更日志 | 每次改动追加一行，并更新「当前状态」 |
-
-**普通使用只需复制对应客户端的 JS 脚本。** 上述目录均已随新版发布到 `main`，无需手动下载或放入客户端。`rules/` 会被最终 Mihomo 配置中的 Rule Providers 引用；`.github/`、`tests/`、`assets/` 分别用于自动验证、回归测试与 README 插图；`AGENTS.md` / `PROGRESS.md` 是给维护代理看的规范与进度板。
-
-### 什么情况下改哪个文件？
-
-- **确认某个域名应直连，但上游分类有误（或该服务会拦截 VPN / 机房出口，例如 Wise）：** 修改 [`rules/direct.list`](./rules/direct.list)。
-- **确认某个域名应代理，但上游分类遗漏：** 修改 [`rules/proxy.list`](./rules/proxy.list)。
-- **确认某个服务需要真实 IP 才能正常工作：** 修改 [`rules/fake-ip-filter.list`](./rules/fake-ip-filter.list)；这只排除 Fake-IP，不改变直连 / 代理去向。
-- **调整策略组、节点识别或 DNS 逻辑：** 修改对应 JS，并运行 [`自动验证`](#自动验证与维护)。共同逻辑的修改应同步到三端。
-
-域名补丁的[格式与优先级](#自维护补丁3-个)见下文。修改规则文件后，内核默认每 24 小时检查更新，也可在客户端手动更新规则集；修改 JS 后则需重新加载脚本并刷新对应覆写配置。
-
 ## 快速开始
 
 ### 选择对应脚本
@@ -107,6 +58,8 @@
 | **Bettbox** | Android | `2026.11.06-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
 | **FlClash** | Android / Windows / macOS / Linux | `2026.11.06-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
+> 三版脚本顶部版本标识当前统一为 `2026.11.06-r2`，并非每次补丁提交都修改版本标识。
+>
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
 ### Clash Verge Rev
@@ -165,6 +118,31 @@ https://raw.githubusercontent.com/skullvek/Mihomo-RouteKit/main/FlClash-mihomoSc
 ```
 
 > Raw 地址适合复制或同步脚本源码。脚本更新后，需要重新加载 / 刷新对应覆写，客户端才会使用新版本。
+
+## 仓库目录与日常维护
+
+| 目录 / 文件 | 用途 | 日常使用时需要做什么 |
+| --- | --- | --- |
+| [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) | 桌面端覆写入口 | 将全文放入 Clash Verge Rev 全局扩展脚本 |
+| [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) | Android 端覆写入口 | 将全文放入 Bettbox 脚本覆写 |
+| [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) | FlClash 多平台扩展入口 | 从脚本管理导入后，在机场订阅的「扩展 → 脚本」中选中 |
+| [`rules/`](./rules/) | 自维护的直连、代理与 Fake-IP 补丁 | Mihomo 自动下载；需要修正域名时编辑对应 `.list` 文件 |
+| [`.github/`](./.github/workflows/validate.yml) | GitHub Actions 自动验证配置 | 每次提交自动运行，无需导入客户端 |
+| [`tests/`](./tests/) | 示例订阅与脚本回归测试 | 修改脚本时验证行为，无需导入客户端 |
+| [`assets/`](./assets/) | README 插图（策略组结构图） | 结构变化时替换对应 PNG，文件名与 README 引用保持一致 |
+| [`AGENTS.md`](./AGENTS.md) | 维护说明（面向 AI 代理） | 改脚本 / 规则 / 文档前先读：契约、验证命令、README 同步点 |
+| [`PROGRESS.md`](./PROGRESS.md) | 维护进度与变更日志 | 每次改动追加一行，并更新「当前状态」 |
+
+**普通使用只需复制对应客户端的 JS 脚本。** 上述目录均已随新版发布到 `main`，无需手动下载或放入客户端。`rules/` 会被最终 Mihomo 配置中的 Rule Providers 引用；`.github/`、`tests/`、`assets/` 分别用于自动验证、回归测试与 README 插图；`AGENTS.md` / `PROGRESS.md` 是给维护代理看的规范与进度板。
+
+### 什么情况下改哪个文件？
+
+- **确认某个域名应直连，但上游分类有误（或该服务会拦截 VPN / 机房出口，例如 Wise）：** 修改 [`rules/direct.list`](./rules/direct.list)。
+- **确认某个域名应代理，但上游分类遗漏：** 修改 [`rules/proxy.list`](./rules/proxy.list)。
+- **确认某个服务需要真实 IP 才能正常工作：** 修改 [`rules/fake-ip-filter.list`](./rules/fake-ip-filter.list)；这只排除 Fake-IP，不改变直连 / 代理去向。
+- **调整策略组、节点识别或 DNS 逻辑：** 修改对应 JS，并运行 [`自动验证`](#自动验证与维护)。共同逻辑的修改应同步到三端。
+
+域名补丁的[格式与优先级](#自维护补丁3-个)见下文。修改规则文件后，内核默认每 24 小时检查更新，也可在客户端手动更新规则集；修改 JS 后则需重新加载脚本并刷新对应覆写配置。
 
 ---
 

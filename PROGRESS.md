@@ -18,6 +18,7 @@
 
 | 日期 | 提交 | 类型 | 内容 | 验证 |
 | --- | --- | --- | --- | --- |
+| 2026-11-06 | — | docs | README 删除「最近维护」表（历史只留在本文件），把「快速开始」提到「核心特性」之后、「仓库目录与日常维护」之前，原版本说明句并入快速开始的脚本表注；AGENTS.md 的同步点清单与发布清单同步更新 | 文档改动：标题顺序 / 锚点 / 版本号一致性核对，非行为变更不跑本地测试 |
 | 2026-11-06 | `9940c01` | feat | `WhatsApp` 全流量接管：新增 `SKULL_MetaIP`（`facebook.mrs`）IP 规则覆盖通话中继与 CDN；桌面端新增 `PROCESS-NAME` 两条（`WhatsApp.exe` / `WhatsApp`），置于所有域名组之前，Bettbox 走 `serviceTarget()` 回落；版本升 `2026.11.06-r2`；测试与 README/AGENTS 同步，组结构未变不重绘图 | 云端 CI success，run 42171120311（head `9940c01`）：语法三端通过、Node 179/179、QuickJS 149、Mihomo v1.19.33 `-t` + 隔离运行态 86/86 |
 | 2026-11-06 | `ea188cc` | feat | 「Netflix」扩为「流媒体」：新增 `disney` / `primevideo` / `hbo` / `spotify` / `tiktok` 五个 `.mrs` 规则集与对应规则，Netflix IP 规则改指 `流媒体`；新增 `WhatsApp` 组与 `whatsapp.mrs` 规则；Bettbox 开关扩到 14 个；版本升 `2026.11.06-r1`；测试断言与 README/AGENTS 全部同步，结构图重绘 | 云端 CI success，run 42168983038（head `ea188cc`）：语法三端通过、Node 179/179、QuickJS 149、Mihomo v1.19.33 `-t` + 隔离运行态 86/86；结构图重绘为 2337×3456 |
 | 2026-11-03 | `70b1da7` | fix | 七项审计修复同步三端 `2026.11.03-r1`：引用保留/有效成员判环分离，纯组环独立切断；统一 AdapterType/保守三值正则；provider 原名/原 YAML 类型过滤再改名；只裁剪确定完整的 inline，HTTP/file fallback 与未知语义保留全部地区；非法 use 规范化、空组 REJECT。先补共享审计复现及 Node 行为断言，再改生产 JS；扩展 QuickJS，新增固定 Mihomo 完整配置 + 隔离运行态 CI 门禁；文档同步，结构图不需改 | 独立静态复核通过；云端 CI success，run 41624420766（head `8a8587e`）：语法三端通过、Node 179/179、QuickJS 148、Mihomo v1.19.33 `-t` + 隔离运行态 86/86；按用户要求未运行本地测试/构建/内核 |
@@ -65,6 +66,6 @@
 2. CI 中 `node --test tests/validate.js tests/repair.test.js`、QuickJS 与 `tests/mihomo-ci.js` 全绿；行为变更已加审计断言，未验证前标待验。
 3. 三端默认项打印与预期一致（`default-selected`）。
 4. 版本号是否需要 bump（行为变更 bump，纯文档不动）。
-5. README 七处同步点已更新；结构图与脚本不矛盾。
+5. README 同步点（核心特性 / 默认分流 / 结构总览 / 服务段 / 快速开始版本表 / 版本说明句）已更新；变更历史只写本文件「变更记录」；结构图与脚本不矛盾。
 6. 本文件「当前状态」与「变更记录」已更新。
 7. 由父任务提交/推送 `main` 后确认 `git ls-remote origin main` 与本地 `HEAD` 一致，CI 通过。
