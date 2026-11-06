@@ -26,6 +26,7 @@
 | `tests/fixtures/*.json` | 5 份合成订阅 | 全部假数据，**不得写入真实订阅** |
 | `tests/repair.test.js` / `tests/repair-cases.js` | 七项审计行为回归与共享合成输入 | 先补审计复现，再改生产脚本；含真实循环、开关碰撞对照 |
 | `tests/mihomo-ci.js` | 固定 v1.19.33 真实内核门禁 | 完整合成配置 `-t` 成功日志 + 隔离运行态成员与输出 dialer |
+| `tests/performance-ci.js` | 云端等价性能门禁与基准 | 固定优化前 SHA，完整输出 + 有序告警对拍（含复用 VM），构造次数门禁，计时仅作证据；有意改行为时需同步审查基线与契约 |
 | `tests/engine-cases.js` + `tests/quickjs_check.py` | Node ↔ 真实 QuickJS 对照 | 只在 CI 跑（本地通常没有 `quickjs`） |
 | `.github/workflows/validate.yml` | push / PR / 手动触发 | 语法 → Node → QuickJS → 固定 Mihomo |
 | `assets/proxy-groups.png` | README「结构总览」用的结构图 | 组顺序或默认值变了必须重画，**图不能与脚本矛盾** |
@@ -101,6 +102,7 @@ node --check Clash-Verge-Rev-mihomoScript.js
 node --check Bettbox-mihomoScript.js
 node --check FlClash-mihomoScript.js
 node --test tests/validate.js tests/repair.test.js
+node tests/performance-ci.js
 
 # 打印每个 fixture 实际建出的地区组，确认裁剪逻辑
 node -e 'const {execute,SCRIPTS,fixture}=require("./tests/helpers");for(const f of SCRIPTS){for(const n of ["direct-proxies","provider-only","mixed-provider"]){const c=execute(f,fixture(n));console.log(f,n,c["proxy-groups"].length,c["proxy-groups"].map(g=>g.name).filter(x=>/聚合$|^其他地区$/.test(x)).join(","));}}'

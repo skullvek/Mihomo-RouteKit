@@ -60,20 +60,20 @@ function compilationCount(file, source, input) {
   return metrics.compiles;
 }
 function budget(compiles) {
-  assert.ok(compiles <= 64, `RegExp compilations must be bounded by patterns, not nodes: ${compiles} > 64`);
+  assert.ok(compiles <= 64, `RegExp constructor calls must be bounded by patterns, not nodes: ${compiles} > 64`);
 }
 const evidence = {baseline: BASELINE, node: process.version, red: [], equivalence: 0, benchmarks: []};
 for (const file of SCRIPTS) for (const workload of workloads) {
   const {before, after} = sources.get(file);
   const oldCount = compilationCount(file, before, workload.input);
   // This must reject the old implementation, proving the regression gate is live.
-  assert.throws(() => budget(oldCount), /RegExp compilations must be bounded/);
-  console.log(`BASELINE RED ${file} ${workload.label}: ${oldCount} compilations exceeds 64`);
+  assert.throws(() => budget(oldCount), /RegExp constructor calls must be bounded/);
+  console.log(`BASELINE RED ${file} ${workload.label}: ${oldCount} constructor calls exceeds 64`);
   evidence.red.push({file, label: workload.label, compiles: oldCount});
   if (!baselineOnly) {
     const newCount = compilationCount(file, after, workload.input);
     budget(newCount);
-    console.log(`CANDIDATE GREEN ${file} ${workload.label}: ${newCount} compilations`);
+    console.log(`CANDIDATE GREEN ${file} ${workload.label}: ${newCount} constructor calls`);
   }
 }
 if (baselineOnly) {
@@ -115,7 +115,20 @@ for (const item of cases) {
   assert.deepEqual(newRun.diagnostics, oldRun.diagnostics, item.script + ': diagnostics / ' + item.label);
   evidence.equivalence += 1;
 }
-console.log(`Full output + ordered diagnostics equivalence: ${evidence.equivalence}/${cases.length}`);
+// Reuse one engine per script across disjoint inputs: cache state must never leak
+// from one main() invocation to another in a long-lived client runtime.
+for (const file of SCRIPTS) {
+  const {before, after} = sources.get(file);
+  const oldRun = prepare(file, before);
+  const newRun = prepare(file, after);
+  const sequence = cases.filter(item => item.script === file && !item.options).slice().reverse();
+  for (const item of sequence) {
+    assert.deepEqual(newRun.run(item.input), oldRun.run(item.input), file + ': reused VM / ' + item.label);
+    assert.deepEqual(newRun.diagnostics, oldRun.diagnostics, file + ': reused VM diagnostics / ' + item.label);
+    evidence.equivalence += 1;
+  }
+}
+console.log(`Full output + ordered diagnostics equivalence: ${evidence.equivalence} checks (fresh + reused VM)`);
 
 function median(values) {
   const sorted = values.slice().sort((a, b) => a - b);
@@ -152,5 +165,5 @@ if (process.env.RUNNER_TEMP) {
 }
 if (process.env.GITHUB_STEP_SUMMARY) {
   const rows = evidence.benchmarks.map(row => `| ${row.file} | ${row.label} | ${row.beforeMs.toFixed(2)} | ${row.afterMs.toFixed(2)} | ${row.reductionPct.toFixed(1)}% | ${row.beforeCompiles} → ${row.afterCompiles} |`);
-  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Non-reducing performance audit\n\nBaseline: ${BASELINE}; full output + diagnostics: ${evidence.equivalence}/${cases.length}. Node ${process.version}, same runner, 3 warmups + median of 9 alternating measurements; includes clone/JSON, excludes VM/source setup. Not client latency or network throughput.\n\n| Script | Input | Before ms | After ms | Reduction | RegExp compilations |\n|---|---|---:|---:|---:|---:|\n${rows.join('\n')}\n`);
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Non-reducing performance audit\n\nBaseline: ${BASELINE}; full output + diagnostics: ${evidence.equivalence} checks (fresh + reused VM). Node ${process.version}, same runner, 3 warmups + median of 9 alternating measurements; includes clone/JSON, excludes VM/source setup. Not client latency or network throughput.\n\n| Script | Input | Before ms | After ms | Reduction | RegExp constructor calls |\n|---|---|---:|---:|---:|---:|\n${rows.join('\n')}\n`);
 }

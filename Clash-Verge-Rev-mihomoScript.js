@@ -1,5 +1,5 @@
 // Clash Verge Rev 全局扩展脚本
-// Version: 2026.11.06-r2
+// Version: 2026.11.06-r3
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：订阅 -> 全局扩展脚本（Script）
 
@@ -228,6 +228,9 @@ function main(config, profileName) {
   // 宁可多显示一个空组，也不误删有节点的地区。
   // 三值匹配：true / false / null（无法证明与 regexp2 等价）。
   // 未知只允许保守保留地区，不能据此确认循环。自建地区表达式由脚本控制。
+  // 缓存仅限本次 main；保留逐名称、逐 trusted 的三值安全检查。
+  // 表达式无 g/y 标志，可复用；编译失败缓存为 null，仍表示未知而非不匹配。
+  const compiledPatterns = new Map();
   const patternMatches = (pattern, name, trusted = false) => {
     if (!pattern) return false;
     if (typeof pattern !== "string" || typeof name !== "string") return null;
@@ -245,11 +248,17 @@ function main(config, profileName) {
           continue;
         }
       }
-      try {
-        if (new RegExp(body, flags).test(name)) return true;
-      } catch (_) {
-        unknown = true;
+      let expression = compiledPatterns.get(part);
+      if (expression === undefined) {
+        try {
+          expression = new RegExp(body, flags);
+        } catch (_) {
+          expression = null;
+        }
+        compiledPatterns.set(part, expression);
       }
+      if (expression === null) unknown = true;
+      else if (expression.test(name)) return true;
     }
     return unknown ? null : false;
   };
@@ -268,8 +277,12 @@ function main(config, profileName) {
     return true;
   };
 
-  const nodeInGroup = (name, filter, excludeFilter) =>
-    memberStatus({ name }, { filter, "exclude-filter": excludeFilter }, false, false, true) === true;
+  const manualRegionRank = (name) => {
+    for (let i = 0; i < MANUAL_REGION_TESTS.length; i += 1) {
+      if (MANUAL_REGION_TESTS[i].test(name)) return i;
+    }
+    return MANUAL_REGION_TESTS.length;
+  };
 
   // 只有完整、可预测的 inline 清单可以证明某地区不存在。
   // HTTP/file payload 是 fallback，不代表稍后加载的远端/文件清单。
@@ -319,27 +332,19 @@ function main(config, profileName) {
     if (!known.complete) {
       return { unknown: true, keys: REGION_KEYS.slice(), other: true };
     }
-    const keys = [];
-    for (const key of REGION_KEYS) {
-      if (known.names.some((name) => nodeInGroup(name, FILTER[key], REGION_EXCLUDE[key]))) {
-        keys.push(key);
-      }
+    // names 已排除伪节点；首个匹配地区等价于 filter + 高优先级排除。
+    // 单次分类复用已编译表达式，不再逐地区重复扫描/构造组合正则。
+    const ranks = new Set();
+    for (const name of known.names) {
+      ranks.add(manualRegionRank(name));
+      if (ranks.size === REGION_KEYS.length + 1) break;
     }
-    const other = known.names.some((name) => {
-      for (let i = 0; i < MANUAL_REGION_TESTS.length; i += 1) {
-        if (MANUAL_REGION_TESTS[i].test(name)) return false;
-      }
-      return true;
-    });
-    return { unknown: false, keys, other };
+    return {
+      unknown: false,
+      keys: REGION_KEYS.filter((key, index) => ranks.has(index)),
+      other: ranks.has(REGION_KEYS.length)
+    };
   })();
-
-  const manualRegionRank = (name) => {
-    for (let i = 0; i < MANUAL_REGION_TESTS.length; i += 1) {
-      if (MANUAL_REGION_TESTS[i].test(name)) return i;
-    }
-    return MANUAL_REGION_TESTS.length;
-  };
 
   // 欧洲与「其他地区」是多国混排的大区：这两个桶再按节点名开头的国旗做二级分组，
   // 让同一国家的节点连在一起；其余大区本身就是单一国家，不再拆。
@@ -381,7 +386,6 @@ function main(config, profileName) {
         )
         .map((entry) => entry.name)
     : [];
-  const manualProxyNames = getManualProxyNames();
 
   // ---------- 3. 工具函数 ----------
   const select = (name, icon, proxies) => ({
@@ -559,11 +563,7 @@ function main(config, profileName) {
       // 直接节点按 香港→澳门→台湾→新加坡→韩国→日本→美国→欧洲→其他 分桶，
       // 同地区内保留订阅原顺序；provider 动态节点通过 use 引入，不参与这里的排序。
       // 不加入 DIRECT，并排除自定义直连/绕过出站。
-      ...(manualProxyNames.length > 0
-        ? { proxies: [...manualProxyNames] }
-        : providerNames.length === 0
-          ? { proxies: ["REJECT"] }
-          : {}),
+      // proxies 在 preserveDependencies 完成节点改名/去重后一次生成。
       ...(providerNames.length > 0
         ? {
             use: providerNames,
@@ -729,7 +729,7 @@ function main(config, profileName) {
       nodes.set(proxy.name, proxy);
     }
     if (Array.isArray(config.proxies)) config.proxies = [...nodes.values()];
-    // 初始手动列表生成于名称规范化之前，必须同步实际保留的节点名。
+    // 节点名称规范化后再生成手动列表，避免重复过滤、地区识别和排序。
     const manualGroup = config["proxy-groups"][0];
     const names = getManualProxyNames();
     if (names.length > 0) manualGroup.proxies = names;
@@ -886,6 +886,16 @@ function main(config, profileName) {
         visibleNodes.set({}, { proxy: effective, owner, providerName: name });
       }
     }
+    // 引用修复与纯组拓扑检查已完成。只有有效节点存在 dialer 时才需要执行图；
+    // guard 使用最终 owner（包含 provider/override），不遗漏链式拨号或改变告警。
+    let hasNodeDialer = false;
+    for (const { owner } of visibleNodes.values()) {
+      if (owner["dialer-proxy"]) {
+        hasNodeDialer = true;
+        break;
+      }
+    }
+    if (!hasNodeDialer) return;
     const groupMembers = new Map();
     for (const group of groups.values()) {
       // 显式成员只应用 excludes/type，group.filter 只影响自动加入的成员。

@@ -45,6 +45,7 @@
 | Provider | 自动补齐缺失的 health-check 参数，同时尊重机场显式关闭的健康检查 |
 | DNS | 国内查询直连；默认国外查询经 `国外流量`；提供独立 `direct-nameserver` |
 | 兼容性 | 保留必要旧组依赖，按有效成员判环；不确定正则保守处理，非法 `use` 就地规范化 |
+| 执行效率 | 节点改名/去重后只排序一次；地区单次分类；单次执行内复用编译正则；无节点 dialer 时跳过有效成员图（仍修复引用与纯组循环） |
 | Bettbox | v1.18.8+ 提供 14 个可视化覆写开关 |
 | TUN 管理 | Clash Verge Rev 仅补齐缺失的 TUN 默认项；Bettbox / FlClash 的 VPN / TUN 由 App 管理 |
 
@@ -54,11 +55,11 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.06-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.11.06-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.11.06-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.06-r3` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.11.06-r3` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.11.06-r3` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
-> 三版脚本顶部版本标识当前统一为 `2026.11.06-r2`，并非每次补丁提交都修改版本标识。
+> 三版脚本顶部版本标识当前统一为 `2026.11.06-r3`，并非每次补丁提交都修改版本标识。
 >
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -866,6 +867,7 @@ GitHub Actions 在 push、pull request 和手动触发时运行：
 - AI 与国外流量的代理约束（`国外流量` 不得含 `DIRECT` 且默认 `全球手动`）、Microsoft / Apple / 游戏平台的 `default-selected: DIRECT`、漏网之鱼默认出口和三端一致性
 - Bettbox 的 14 个单独开关、全部关闭及同名节点碰撞场景；FlClash 的客户端字段保留、NTP、当前仓库补丁与跨端规则一致性；七项审计复现与真实循环正向对照，真实 QuickJS 与 Node 对拍
 - 固定 Mihomo v1.19.33 Linux amd64：5 份既有合成 fixture 及修复用例逐端输出完整配置，保留规则与 DNS 引用、用本地合成规则文件替换远端下载，`-t` 同时检查退出码及 `test is successful` 日志
+- 性能门禁：以固定优化前提交为基线，严格对比完整配置和有序诊断（新 VM / 复用 VM）；1000 节点静态、inline 和链式拨号负载的动态 `RegExp` 构造次数有上限；同 runner 预热后交替测量 9 次中位数，上传 `routekit-performance` 数据，不把网络延迟或带宽算作提速
 - 隔离运行态 `/proxies` 校验排除成员、类型/Unicode、provider 改名过滤/类型排除、HTTP fallback 更新后的日本/美国成员与畸形 `use`；另行断言脚本输出 dialer，避免仅检查成员遗漏误切
 
 验证由云端 CI 执行（本轮不运行本地测试、构建或内核），命令如下：
@@ -875,6 +877,7 @@ node --check Clash-Verge-Rev-mihomoScript.js
 node --check Bettbox-mihomoScript.js
 node --check FlClash-mihomoScript.js
 node --test tests/validate.js tests/repair.test.js
+node tests/performance-ci.js
 python -m pip install quickjs==1.19.4
 python tests/quickjs_check.py
 node tests/mihomo-ci.js "$RUNNER_TEMP/mihomo/mihomo"
