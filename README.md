@@ -52,7 +52,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
-| 2026-11-06 | `WhatsApp` 升级为全流量接管：新增 `SKULL_MetaIP`（`facebook.mrs`，123 条 Meta 网段）IP 规则，覆盖信令、CDN 与通话中继；桌面端新增两条 `PROCESS-NAME` 规则（`WhatsApp.exe` / `WhatsApp`），把 WhatsApp 进程的 TCP/UDP 全部收进该组，位置在全部域名组之前。规则 48 / 50 / 50，Rule Providers 41。三版版本标识统一为 `2026.11.06-r2`。 |
+| 2026-11-06 | `WhatsApp` 升级为全流量接管：新增 `SKULL_MetaIP`（`facebook.mrs`，123 条 Meta 网段）IP 规则，覆盖信令、CDN 与通话中继；桌面端新增两条 `PROCESS-NAME` 规则（`WhatsApp.exe` / `WhatsApp`），把 WhatsApp 进程的 TCP/UDP 全部收进该组，位置在全部域名组之前。规则 48 / 50 / 50，Rule Providers 41。三版版本标识统一为 `2026.11.06-r2`；本次云端验证已通过（Node 179 项、QuickJS 149 用例、Mihomo 86 用例；[CI 记录](https://github.com/skullvek/Mihomo-RouteKit/actions/runs/42171120311)）。 |
 | 2026-11-06 | 「Netflix」策略组扩为「流媒体」，规则集由 1 个增至 6 个（Netflix / Disney+ / Prime Video / HBO Max / Spotify / TikTok），Netflix IP 规则随之改指；新增 `WhatsApp` 独立策略组与 `whatsapp.mrs` 规则集。服务组由 9 个增至 10 个，固定主策略组 17 个，全地区机场共 35 组、规则 45 / 47 / 47。`流媒体` 与 `WhatsApp` 首次默认均为 `全球手动`。三版版本标识统一为 `2026.11.06-r1`；本次云端验证已通过（Node 179 项、QuickJS 149 用例、Mihomo 86 用例；[CI 记录](https://github.com/skullvek/Mihomo-RouteKit/actions/runs/42168983038)）。 |
 | 2026-11-03 | 修复七项审计问题：旧组按实际排除条件判环、三端统一 AdapterType 与保守正则语义、provider 原名/原类型过滤后再改名、HTTP/file fallback 与不确定正则不再裁掉地区、规范化非法 `use`。保留真实循环的 REJECT 降级；新增 Node/QuickJS 回归与 Mihomo v1.19.33 完整配置及隔离运行态 CI 门禁。三版统一为 `2026.11.03-r1`；本次云端验证已通过（Node 179 项、QuickJS 148 用例、Mihomo 86 用例；[CI 记录](https://github.com/skullvek/Mihomo-RouteKit/actions/runs/41624420766)）。 |
 | 2026-10-31 | 欧洲与「其他地区」在地区分桶后再按节点名开头的国旗做二级分组，同一国家的节点连在一起（机场按线路类型排序时 `🇩🇪德国01｜三网优化` 与 `🇩🇪德国01｜HK｜三网优化` 不再被别的国家隔开）；国家内部仍按订阅原顺序。三版版本标识统一为 `2026.10.31-r2`。 |
