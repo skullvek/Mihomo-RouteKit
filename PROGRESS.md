@@ -10,15 +10,15 @@
 | 策略组 | 17 固定 + 每个有节点的地区 2 组（19–35；9 地区全有 = 26 可见 + 9 隐藏） |
 | 分流规则 | 45 / 47 / 47（CVR / Bettbox / FlClash） |
 | Rule Providers | 40（37 上游 `.mrs` @meta + 3 自维护 `domain/text`） |
-| 回归测试 | Node 179/179（既有 74 + 审计回归 105）；QuickJS 148 用例；Mihomo v1.19.33 完整配置及隔离成员 86 用例 |
-| 最近 CI | success — `Validate scripts`，run 41624420766，head `8a8587e`（`2026.11.03-r1`；Node 179/179 + QuickJS 148 + Mihomo 86） |
+| 回归测试 | Node 179/179（既有 74 + 审计回归 105）；QuickJS 149 用例；Mihomo v1.19.33 完整配置及隔离成员 86 用例 |
+| 最近 CI | success — `Validate scripts`，run 42168983038，head `ea188cc`（`2026.11.06-r1`；Node 179/179 + QuickJS 149 + Mihomo 86） |
 | 结构图 | `assets/proxy-groups.png` 已重绘：26 组顺序（含 `流媒体` / `WhatsApp`），仍对应 9 个地区全有的情形 |
 
 ## 变更记录（新 → 旧）
 
 | 日期 | 提交 | 类型 | 内容 | 验证 |
 | --- | --- | --- | --- | --- |
-| 2026-11-06 | 待填 | feat | 「Netflix」扩为「流媒体」：新增 `disney` / `primevideo` / `hbo` / `spotify` / `tiktok` 五个 `.mrs` 规则集与对应规则，Netflix IP 规则改指 `流媒体`；新增 `WhatsApp` 组与 `whatsapp.mrs` 规则；Bettbox 开关扩到 14 个；版本升 `2026.11.06-r1`；测试断言与 README/AGENTS 全部同步，结构图重绘 | 待云端 CI |
+| 2026-11-06 | `ea188cc` | feat | 「Netflix」扩为「流媒体」：新增 `disney` / `primevideo` / `hbo` / `spotify` / `tiktok` 五个 `.mrs` 规则集与对应规则，Netflix IP 规则改指 `流媒体`；新增 `WhatsApp` 组与 `whatsapp.mrs` 规则；Bettbox 开关扩到 14 个；版本升 `2026.11.06-r1`；测试断言与 README/AGENTS 全部同步，结构图重绘 | 云端 CI success，run 42168983038（head `ea188cc`）：语法三端通过、Node 179/179、QuickJS 149、Mihomo v1.19.33 `-t` + 隔离运行态 86/86；结构图重绘为 2337×3456 |
 | 2026-11-03 | `70b1da7` | fix | 七项审计修复同步三端 `2026.11.03-r1`：引用保留/有效成员判环分离，纯组环独立切断；统一 AdapterType/保守三值正则；provider 原名/原 YAML 类型过滤再改名；只裁剪确定完整的 inline，HTTP/file fallback 与未知语义保留全部地区；非法 use 规范化、空组 REJECT。先补共享审计复现及 Node 行为断言，再改生产 JS；扩展 QuickJS，新增固定 Mihomo 完整配置 + 隔离运行态 CI 门禁；文档同步，结构图不需改 | 独立静态复核通过；云端 CI success，run 41624420766（head `8a8587e`）：语法三端通过、Node 179/179、QuickJS 148、Mihomo v1.19.33 `-t` + 隔离运行态 86/86；按用户要求未运行本地测试/构建/内核 |
 | 2026-10-31 | `6cb6fce` | fix | 欧洲与「其他地区」增加国家二级分组：`countryKey` 取节点名开头的国旗（代理对比较，不依赖 `u` 标志），桶内同国家相邻、国家内部保持订阅原顺序；其余七个大区不再拆分；版本升 `2026.10.31-r2` | `node --check` ×3、`node --test` 74/74（新增 `Europe and 其他地区 keep the same country together`）、mihomo v1.19.33 `-t` ×4 全 `test is successful`、真实订阅（76 节点）复算：同国家被拆从 9 个降到 0 个 |
 | 2026-10-31 | `a3b0fb0` | fix | 地区归属改为只看节点名第一个 `｜` / `|` 之前的部分：`🇯🇵日本01｜HK｜三网优化` 归日本聚合（原先被中转地抢进香港聚合），未收录国旗 `🇧🇷` / `🇹🇷` 归「其他地区」；`REGION_PATTERN_BODY` 的字母边界不再把分隔符当边界；`全球手动` 同地区内改回订阅原顺序（`.map(...).sort(rank, index)`，删除 `naturalCompare`）；版本升 `2026.10.31-r1` | `node --check` ×3、`node --test` 71/71（新增 relay 标签 / 订阅顺序两项断言）、mihomo v1.19.33 `-t` ×3 全 `test is successful`、运行态 `/proxies` 核对：香港聚合 5（无外区）、日本聚合含 `日本01｜HK`、其他地区含 `巴西01｜HK`、`全球手动` 18 节点按地区分桶且同地区保持订阅顺序 |
