@@ -10,7 +10,7 @@
 
 脚本保留订阅里的 `proxies` / `proxy-providers`，**重建**主策略组、分流规则、Rule Providers 和整段 DNS。因此换机场通常不用改脚本。
 
-每次执行产出：**17 个固定主策略组 + 每个「订阅里真的有节点」的地区 2 组**（可见聚合组 + 隐藏 `url-test`；9 个地区全有时共 35 组，单地区机场 19 组）、**40 个 `SKULL_*` Rule Provider**（37 个上游 `.mrs` 经 jsDelivr `@meta` + 3 个自维护 `domain/text` 经 Raw）、**45 / 47 / 47 条规则**、完整 `dns` 段。
+每次执行产出：**17 个固定主策略组 + 每个「订阅里真的有节点」的地区 2 组**（可见聚合组 + 隐藏 `url-test`；9 个地区全有时共 35 组，单地区机场 19 组）、**41 个 `SKULL_*` Rule Provider**（38 个上游 `.mrs` 经 jsDelivr `@meta` + 3 个自维护 `domain/text` 经 Raw）、**48 / 50 / 50 条规则**、完整 `dns` 段。
 
 ## 2. 目录地图
 
@@ -51,7 +51,7 @@
 
    `default-selected` 是字符串成员名；`select` 组没有它就从选项第一项开始。改动默认值时必须在 `tests/validate.js` 的 `core design contracts` 里加断言。
 5. **规则顺序固定**（命中即停）：
-   LAN → NotebookLM/Gemini 精确域名 → OpenAI/Claude/Gemini →（Bettbox/FlClash）`pool.ntp.org` 与 UDP/123 → `SKULL_CustomDirect` → `SKULL_CustomProxy` → `apple@cn` / `microsoft@cn` / 国内游戏与下载 CDN → 7 个游戏平台 → 8 个服务组 → `cn` → `geolocation-!cn` → 5 条 IP（`no-resolve`）→ China IP → `MATCH,漏网之鱼`。
+   LAN → 2 条 `PROCESS-NAME`（WhatsApp，桌面端生效）→ NotebookLM/Gemini 精确域名 → OpenAI/Claude/Gemini →（Bettbox/FlClash）`pool.ntp.org` 与 UDP/123 → `SKULL_CustomDirect` → `SKULL_CustomProxy` → `apple@cn` / `microsoft@cn` / 国内游戏与下载 CDN → 7 个游戏平台 → 10 个服务组 → `cn` → `geolocation-!cn` → 6 条 IP（`no-resolve`）→ China IP → `MATCH,漏网之鱼`。
    改顺序前先想清楚谁会被提前接管（典型事故：AI 被 Google 抢走、Xbox 被 Microsoft 抢走、国内游戏走代理）。
 6. **DNS 结构**：fake-ip `198.18.0.1/16` + `blacklist`（只继承订阅中同为 blacklist 的 filter）；国内域名/自定义直连走国内 DoH `#DIRECT`；默认与境外走 Cloudflare/Google DoH `#国外流量`；AI 域名 `nameserver-policy` 跟随各自 AI 组；`direct-nameserver` 与 `proxy-server-nameserver` 用国内 DoH（后者防 `nameserver → 国外流量 → 节点域名` 循环）。三端 `direct-nameserver-follow-policy: true`：直连拨号解析也遵守 `nameserver-policy`（LAN → `system`，AI/补丁域名跟随各自组），未命中 policy 的域名回落 `direct-nameserver`，内网主机名不外发。
 7. **`rules/*.list` 只写域名**：`+.example.com` 匹配主域与全部子域，裸域名精确匹配。不写 `DOMAIN-SUFFIX,`、策略名或 `payload:`。CI 会校验格式、重复行、直连/代理冲突，并拒绝把共享父域整体代理（如 `mchost.guru`、`aliyuncs.com`）。
@@ -130,6 +130,7 @@ node -e 'const {execute,SCRIPTS}=require("./tests/helpers");for(const f of SCRIP
 - **GitHub 的 Mermaid 在跨域 iframe 里渲染**：页面 DOM 查不到图内 `<svg>` 是正常的，判断标准是 `iframe[src*="markdown/mermaid"]` 的数量。
 - **客户端会在脚本之后回写自己的设置**：`mode`、`unified-delay`、顶层 `ipv6`、`find-process-mode`、TUN 全部以 App 为准，脚本里写了也可能被覆盖——不要承诺「脚本已强制」。
 - **别写死 35 组**：地区组数量由订阅节点决定——`direct-proxies.json` 只有香港 / 美国 → 21 组，`provider-only.json` 只有 NRT → 19 组，`mixed-provider.json` 是新加坡 + 台湾 → 21 组。断言组数前先看 fixture 里到底有哪些地区；远端/file fallback、未知或畸形 inline 清单、不确定 regexp2/改名都会退回 9 个地区全保留。
+- **`PROCESS-NAME` 只在桌面端生效**：Bettbox 写 `find-process-mode: off`，Android 上没有进程信息，WhatsApp 的两条进程规则不会命中；手机端要靠 `whatsapp.mrs` 域名与 `facebook.mrs` Meta 网段，P2P 直连对端的 UDP 无法被任何规则识别。Bettbox 关闭 `WhatsApp` 开关时，进程规则必须走 `serviceTarget()` 改指 `国外流量`，否则会留下悬空引用。
 - **Bettbox / FlClash 的 DNS 覆写**：客户端一旦开启 DNS 覆写，脚本的 `nameserver-policy`、`direct-nameserver` 会被重新生成覆盖，README 已要求用户关闭，排查问题时先问这一项。
 
 ## 8.1 地区归属的两个易错点

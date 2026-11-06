@@ -88,6 +88,8 @@ for (const file of SCRIPTS) {
       assert.ok(c.rules.includes(`RULE-SET,${provider},流媒体`), provider);
     }
     assert.ok(c.rules.includes('RULE-SET,SKULL_WhatsApp,WhatsApp'));
+    assert.ok(c.rules.includes('RULE-SET,SKULL_MetaIP,WhatsApp,no-resolve'));
+    assert.ok(c.rules.indexOf('PROCESS-NAME,WhatsApp.exe,WhatsApp') < c.rules.indexOf('RULE-SET,SKULL_OpenAI,ChatGPT'), 'process rule must precede service rules');
     assert.equal(c.rules.filter(rule => rule.endsWith(',流媒体') || rule === 'RULE-SET,SKULL_NetflixIP,流媒体,no-resolve').length, 7);
     assert.equal(c['proxy-groups'].find(g => g.name === '漏网之鱼').proxies[0], '国外流量');
     assert.ok(c.rules.includes('RULE-SET,SKULL_ChinaIP,DIRECT'));
@@ -320,7 +322,7 @@ test('FlClash: defaults inherit Bettbox routing with current-repository patches'
     const flclash = execute(SCRIPTS[2], fixture(name), {noFromEntries: true});
     assert.deepEqual(flclash['proxy-groups'], bettbox['proxy-groups']);
     assert.deepEqual(flclash.rules, bettbox.rules);
-    assert.equal(flclash.rules.length, 47);
+    assert.equal(flclash.rules.length, 50);
     assert.deepEqual(flclash['rule-providers'], bettbox['rule-providers']);
     assert.deepEqual(flclash.dns['nameserver-policy'], bettbox.dns['nameserver-policy']);
     assert.equal(flclash.dns['direct-nameserver-follow-policy'], true);

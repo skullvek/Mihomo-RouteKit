@@ -38,7 +38,7 @@
 | 国内流量 | 中国大陆域名 / IP 与局域网优先 `DIRECT` |
 | 基础分流 | `全球手动` / `自动选择` / `国外流量` / `漏网之鱼` 四个基础组；`国外流量` 首次默认 `全球手动`，`漏网之鱼` 默认落 `国外流量` |
 | AI 服务 | ChatGPT、Claude、Gemini / NotebookLM 独立分流，**不提供 `DIRECT` 路径**；三组首次默认 `全球手动` |
-| 常用国际服务 | Google、GitHub、X、YouTube、流媒体（Netflix / Disney+ / Prime Video / HBO Max / Spotify / TikTok）、Telegram、WhatsApp、Microsoft、Apple 独立策略组；前七个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
+| 常用国际服务 | Google、GitHub、X、YouTube、流媒体（Netflix / Disney+ / Prime Video / HBO Max / Spotify / TikTok）、Telegram、WhatsApp（域名 + Meta 网段 + 桌面进程全接管）、Microsoft、Apple 独立策略组；前七个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
 | 游戏平台 | 三版均独立分流，首次默认 `DIRECT`；Bettbox 可通过可视化开关关闭 |
 | 地区节点 | 香港、澳门、台湾、新加坡、韩国、日本、美国、欧洲、其他地区；同时支持自动测速与手动选择，且**只给订阅里实际存在节点的地区建组** |
 | 节点整理 | 过滤公告 / 流量提示等伪节点；内联节点按地区分桶、同地区保留订阅原顺序；欧洲与「其他地区」再按国家分组 |
@@ -52,6 +52,7 @@
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-11-06 | `WhatsApp` 升级为全流量接管：新增 `SKULL_MetaIP`（`facebook.mrs`，123 条 Meta 网段）IP 规则，覆盖信令、CDN 与通话中继；桌面端新增两条 `PROCESS-NAME` 规则（`WhatsApp.exe` / `WhatsApp`），把 WhatsApp 进程的 TCP/UDP 全部收进该组，位置在全部域名组之前。规则 48 / 50 / 50，Rule Providers 41。三版版本标识统一为 `2026.11.06-r2`。 |
 | 2026-11-06 | 「Netflix」策略组扩为「流媒体」，规则集由 1 个增至 6 个（Netflix / Disney+ / Prime Video / HBO Max / Spotify / TikTok），Netflix IP 规则随之改指；新增 `WhatsApp` 独立策略组与 `whatsapp.mrs` 规则集。服务组由 9 个增至 10 个，固定主策略组 17 个，全地区机场共 35 组、规则 45 / 47 / 47。`流媒体` 与 `WhatsApp` 首次默认均为 `全球手动`。三版版本标识统一为 `2026.11.06-r1`；本次云端验证已通过（Node 179 项、QuickJS 149 用例、Mihomo 86 用例；[CI 记录](https://github.com/skullvek/Mihomo-RouteKit/actions/runs/42168983038)）。 |
 | 2026-11-03 | 修复七项审计问题：旧组按实际排除条件判环、三端统一 AdapterType 与保守正则语义、provider 原名/原类型过滤后再改名、HTTP/file fallback 与不确定正则不再裁掉地区、规范化非法 `use`。保留真实循环的 REJECT 降级；新增 Node/QuickJS 回归与 Mihomo v1.19.33 完整配置及隔离运行态 CI 门禁。三版统一为 `2026.11.03-r1`；本次云端验证已通过（Node 179 项、QuickJS 148 用例、Mihomo 86 用例；[CI 记录](https://github.com/skullvek/Mihomo-RouteKit/actions/runs/41624420766)）。 |
 | 2026-10-31 | 欧洲与「其他地区」在地区分桶后再按节点名开头的国旗做二级分组，同一国家的节点连在一起（机场按线路类型排序时 `🇩🇪德国01｜三网优化` 与 `🇩🇪德国01｜HK｜三网优化` 不再被别的国家隔开）；国家内部仍按订阅原顺序。三版版本标识统一为 `2026.10.31-r2`。 |
@@ -69,7 +70,7 @@
 | 2026-10-04 | Bettbox 对 `pool.ntp.org` 及其子域名、UDP 目标端口 123 增加直连规则，并为 NTP 域名指定国内 DNS；不按 OPPO 等系统应用的包名整体放行。 |
 | 2026-10-02 | 引入 `rules/` 自维护域名补丁、节点地区识别增强，以及 Node / QuickJS 自动回归测试与 GitHub Actions。 |
 
-三版脚本顶部版本标识当前统一为 `2026.11.06-r1`，并非每次补丁提交都修改版本标识。
+三版脚本顶部版本标识当前统一为 `2026.11.06-r2`，并非每次补丁提交都修改版本标识。
 
 ## 仓库目录与日常维护
 
@@ -102,9 +103,9 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.06-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.11.06-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.11.06-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.06-r2` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.11.06-r2` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.11.06-r2` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -175,6 +176,7 @@ https://raw.githubusercontent.com/skullvek/Mihomo-RouteKit/main/FlClash-mihomoSc
 | ChatGPT / Claude / Gemini / NotebookLM | 对应 AI 组 | AI 组只提供代理路径；首次默认 `全球手动` |
 | Apple CN / Microsoft CN | `DIRECT` | 中国区规则优先于通用服务规则 |
 | Google / GitHub / X / YouTube / 流媒体 / Telegram / WhatsApp / Microsoft / Apple | 对应服务组 | 可手动选择自动、地区、具体节点或 `DIRECT`；前七个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
+| WhatsApp 进程与 Meta 网段 | `WhatsApp` | 桌面端 `PROCESS-NAME` 与 `facebook.mrs` 的 Meta 网段规则都指向该组，排在所有域名组之前；Android 无进程匹配 |
 | 游戏平台 | `游戏平台` | 三版均覆盖 Steam / Epic / Battle.net / EA / Ubisoft / Riot / Xbox；首次默认 `DIRECT` |
 | 其他明确国外域名 | `国外流量` | 统一代理出口 |
 | 无法分类的流量 | `漏网之鱼` | 默认走 `国外流量`，保留手动 `DIRECT` 兜底 |
@@ -187,8 +189,8 @@ https://raw.githubusercontent.com/skullvek/Mihomo-RouteKit/main/FlClash-mihomoSc
 flowchart TD
     A[机场订阅] --> B[三端覆写脚本]
     B --> C[策略组：17 固定 + 地区组]
-    B --> D[45 / 47 / 47 条路由规则]
-    E[37 个上游规则集] --> D
+    B --> D[48 / 50 / 50 条路由规则]
+    E[38 个上游规则集] --> D
     F[3 个自维护补丁] --> D
     F --> G[Fake-IP 与 DNS 分流]
     E --> G
@@ -206,8 +208,8 @@ flowchart TD
 | 脚本定义策略组 | **19–35**（按订阅地区数） | **19–35** | **19–35** |
 | 主界面可见组 | **17–26** | **17–26** | **17–26** |
 | 隐藏地区测速组 | **1–9** | **1–9** | **1–9** |
-| 分流规则 | **45** | **47** | **47** |
-| Rule Providers | **40** | **40** | **40** |
+| 分流规则 | **48** | **50** | **50** |
+| Rule Providers | **41** | **41** | **41** |
 
 订阅里没有节点的地区不会建组，Bettbox 关闭服务或地区开关后对应组也会减少，因此实际组数按上表的区间变化。
 
@@ -273,7 +275,7 @@ AI 组选项仅包含：
 
 `Google` / `GitHub` / `X` / `YouTube` / `流媒体` / `Telegram` / `WhatsApp` 通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` 与 `Apple` 通过 `default-selected: DIRECT` 首次默认选中 `DIRECT`。
 
-`流媒体` 聚合 Netflix、Disney+、Prime Video、HBO Max（含 `max.com`）、Spotify、TikTok 六个规则集，Netflix 仍额外带一条 IP 规则；`WhatsApp` 覆盖 `whatsapp.com` / `whatsapp.net` / `wa.me` 等域名。两者都不含中国区前置直连规则，Apple 相关域名仍由 `Apple` 组先接管。Clash Verge Rev / Bettbox 通过 `profile.store-selected` 保留已有选择；FlClash 由客户端自身保存并恢复。Apple 中国区、Microsoft 中国区由前置规则直接 `DIRECT`，不受这两个组的选择影响。
+`流媒体` 聚合 Netflix、Disney+、Prime Video、HBO Max（含 `max.com`）、Spotify、TikTok 六个规则集，Netflix 仍额外带一条 IP 规则；`WhatsApp` 分三层接管：`whatsapp.mrs` 的 11 条域名（`whatsapp.com` / `whatsapp.net` / `wa.me` 等）、`facebook.mrs` 的 123 条 Meta 网段（通话中继与 CDN，`no-resolve`）、以及桌面端两条 `PROCESS-NAME` 规则（`WhatsApp.exe` / `WhatsApp`）。进程规则排在所有域名组之前，因此 WhatsApp 进程访问 Google / Apple 等域名时也留在本组；Android 客户端不支持进程匹配，P2P 直连对端的 UDP 仍会落到 `漏网之鱼`。两者都不含中国区前置直连规则，Apple 相关域名仍由 `Apple` 组先接管。Clash Verge Rev / Bettbox 通过 `profile.store-selected` 保留已有选择；FlClash 由客户端自身保存并恢复。Apple 中国区、Microsoft 中国区由前置规则直接 `DIRECT`，不受这两个组的选择影响。
 
 ### 游戏平台（三版均支持）
 
@@ -397,11 +399,12 @@ Expire / Traffic Remaining / Website ...
 
 ## 分流规则
 
-Clash Verge Rev 有 **45 条**、Bettbox / FlClash 各有 **47 条**分流规则；自上而下匹配，命中即停止。
+Clash Verge Rev 有 **48 条**、Bettbox / FlClash 各有 **50 条**分流规则；自上而下匹配，命中即停止。
 
 | 阶段 | 内容 | 目标 | 条数 |
 | --- | --- | --- | ---: |
 | 1 | `private` 局域网域名 | `DIRECT` | 1 |
+| 进程 | `PROCESS-NAME`：`WhatsApp.exe` / `WhatsApp` | `WhatsApp` | 2 |
 | 2 | NotebookLM / AI Studio / Gemini API 精确域名 | `Gemini / NotebookLM` | 5 |
 | 3 | `openai` / `anthropic` / `google-gemini` | 三个 AI 组 | 3 |
 | 校时（Bettbox / FlClash） | `pool.ntp.org` 及子域名 / UDP 目标端口 123 | `DIRECT` | 2 |
@@ -411,10 +414,10 @@ Clash Verge Rev 有 **45 条**、Bettbox / FlClash 各有 **47 条**分流规则
 | 6 | YouTube / Google / GitHub / Microsoft / Apple / Telegram / WhatsApp / X / Netflix / Disney+ / Prime Video / HBO Max / Spotify / TikTok | 对应服务组 | 14 |
 | 7 | `cn` 中国大陆域名 | `DIRECT` | 1 |
 | 8 | `geolocation-!cn` | `国外流量` | 1 |
-| 9 | private / Google / Telegram / Twitter / 流媒体 IP | 对应目标，`no-resolve` | 5 |
+| 9 | private / Google / Telegram / Twitter / 流媒体 / Meta IP | 对应目标，`no-resolve` | 6 |
 | 10 | China IP | `DIRECT`，允许解析 | 1 |
 | 末 | `MATCH` | `漏网之鱼` | 1 |
-|  | **Clash Verge Rev / Bettbox / FlClash 合计** |  | **45 / 47 / 47** |
+|  | **Clash Verge Rev / Bettbox / FlClash 合计** |  | **48 / 50 / 50** |
 
 ### 关键优先级
 
@@ -440,7 +443,7 @@ Bettbox 中关闭某个服务开关后：
 
 ## Rule Providers
 
-三版均定义 **40 个** `SKULL_*` Rule Providers：37 个来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat)，使用 `.mrs` 格式并通过 jsDelivr 拉取；另有 3 个本仓库维护的 `domain/text` 补丁集，通过 GitHub Raw 拉取。全部经 `国外流量` 下载，默认更新间隔 `86400s`。
+三版均定义 **41 个** `SKULL_*` Rule Providers：38 个来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat)，使用 `.mrs` 格式并通过 jsDelivr 拉取；另有 3 个本仓库维护的 `domain/text` 补丁集，通过 GitHub Raw 拉取。全部经 `国外流量` 下载，默认更新间隔 `86400s`。
 
 ### 自维护补丁（3 个）
 
@@ -521,7 +524,7 @@ riot
 xbox
 ```
 
-### IP 规则（6 个）
+### IP 规则（7 个）
 
 ```text
 private
@@ -530,6 +533,7 @@ google
 telegram
 twitter
 netflix
+facebook
 ```
 
 缓存路径统一位于：

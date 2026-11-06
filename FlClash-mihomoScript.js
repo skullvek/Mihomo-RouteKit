@@ -1,5 +1,5 @@
 // FlClash 扩展脚本（Android / Windows / macOS / Linux）
-// Version: 2026.11.06-r1
+// Version: 2026.11.06-r2
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：新建脚本并粘贴全文；当前订阅 -> 扩展/覆写 -> 脚本，选中本脚本。
 // 在客户端使用规则模式，关闭 DNS 覆写及“追加系统 DNS”；TUN/VPN 由 FlClash 管理。
@@ -648,6 +648,7 @@ function main(config) {
     SKULL_ChinaIP: ipProvider("cn.mrs"),
     SKULL_GoogleIP: ipProvider("google.mrs"),
     SKULL_TelegramIP: ipProvider("telegram.mrs"),
+    SKULL_MetaIP: ipProvider("facebook.mrs"),
     SKULL_XIP: ipProvider("twitter.mrs"),
     SKULL_NetflixIP: ipProvider("netflix.mrs")
   };
@@ -913,6 +914,11 @@ function main(config) {
     // LAN
     "RULE-SET,SKULL_Lan,DIRECT",
 
+    // WhatsApp 进程级接管：桌面端（find-process-mode: strict）连 P2P UDP 一起进组；
+    // Android 客户端不匹配进程，由后面的 whatsapp 域名与 Meta 网段规则覆盖。
+    "PROCESS-NAME,WhatsApp.exe,WhatsApp",
+    "PROCESS-NAME,WhatsApp,WhatsApp",
+
     // AI
     "DOMAIN-SUFFIX,notebooklm.google,Gemini / NotebookLM",
     "DOMAIN-SUFFIX,notebooklm.google.com,Gemini / NotebookLM",
@@ -977,6 +983,7 @@ function main(config) {
     "RULE-SET,SKULL_TelegramIP,Telegram,no-resolve",
     "RULE-SET,SKULL_XIP,X,no-resolve",
     "RULE-SET,SKULL_NetflixIP,流媒体,no-resolve",
+    "RULE-SET,SKULL_MetaIP,WhatsApp,no-resolve",
 
     // 中国 IP 作为未知域名的最终国内兜底
     "RULE-SET,SKULL_ChinaIP,DIRECT",
