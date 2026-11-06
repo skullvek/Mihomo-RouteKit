@@ -26,5 +26,8 @@ for (const name of services) {
   cases.push({script: SCRIPTS[1], label: 'disabled-' + name, input: fixture('provider-only'), options: {toggles: {[name]: false}}});
 }
 cases.push({script: SCRIPTS[1], label: 'all-disabled', input: fixture('mixed-provider'), options: {toggles: Object.fromEntries(services.map(name => [name, false]))}});
-for (const item of cases) item.expected = execute(item.script, item.input, item.options);
-process.stdout.write(JSON.stringify(cases));
+module.exports = {cases};
+if (require.main === module) {
+  for (const item of cases) item.expected = execute(item.script, item.input, item.options);
+  process.stdout.write(JSON.stringify(cases));
+}

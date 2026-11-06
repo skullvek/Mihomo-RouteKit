@@ -18,6 +18,7 @@
 
 | 日期 | 提交 | 类型 | 内容 | 验证 |
 | --- | --- | --- | --- | --- |
+| 2026-11-06 | 待提交 | test | 新增云端性能审计框架：固定优化前 `3b869b5`，先复现动态正则编译次数超预算；共享 QuickJS 输入供后续完整配置与有序诊断对拍，三份生产脚本保持原样 | 待云端 baseline-only 实测；不在本地运行测试或基准 |
 | 2026-11-06 | `40de31f` | docs | README 删除「最近维护」表（历史只留在本文件），把「快速开始」提到「核心特性」之后、「仓库目录与日常维护」之前，原版本说明句并入快速开始的脚本表注；AGENTS.md 的同步点清单与发布清单同步更新 | 文档改动：标题顺序 / 锚点 / 版本号一致性核对，非行为变更不跑本地测试 |
 | 2026-11-06 | `9940c01` | feat | `WhatsApp` 全流量接管：新增 `SKULL_MetaIP`（`facebook.mrs`）IP 规则覆盖通话中继与 CDN；桌面端新增 `PROCESS-NAME` 两条（`WhatsApp.exe` / `WhatsApp`），置于所有域名组之前，Bettbox 走 `serviceTarget()` 回落；版本升 `2026.11.06-r2`；测试与 README/AGENTS 同步，组结构未变不重绘图 | 云端 CI success，run 42171120311（head `9940c01`）：语法三端通过、Node 179/179、QuickJS 149、Mihomo v1.19.33 `-t` + 隔离运行态 86/86 |
 | 2026-11-06 | `ea188cc` | feat | 「Netflix」扩为「流媒体」：新增 `disney` / `primevideo` / `hbo` / `spotify` / `tiktok` 五个 `.mrs` 规则集与对应规则，Netflix IP 规则改指 `流媒体`；新增 `WhatsApp` 组与 `whatsapp.mrs` 规则；Bettbox 开关扩到 14 个；版本升 `2026.11.06-r1`；测试断言与 README/AGENTS 全部同步，结构图重绘 | 云端 CI success，run 42168983038（head `ea188cc`）：语法三端通过、Node 179/179、QuickJS 149、Mihomo v1.19.33 `-t` + 隔离运行态 86/86；结构图重绘为 2337×3456 |
