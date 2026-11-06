@@ -66,11 +66,11 @@ for (const file of SCRIPTS) {
   });
   test(`${file}: core design contracts`, () => {
     const c = execute(file, fixture('direct-proxies'));
-    // 香港 + 美国 两个地区：4 基础 + 3 AI + 9 服务 + 2 聚合 + 2 隐藏自动 = 20。
-    assert.equal(c['proxy-groups'].length, 20);
+    // 香港 + 美国 两个地区：4 基础 + 3 AI + 10 服务 + 2 聚合 + 2 隐藏自动 = 21。
+    assert.equal(c['proxy-groups'].length, 21);
     const regionNames = c['proxy-groups'].map(g => g.name).filter(name => /聚合$|^其他地区$/.test(name));
     assert.deepEqual(regionNames, ['香港聚合', '美国聚合']);
-    for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', 'Google', 'GitHub', 'Microsoft', 'Apple', 'Telegram', 'X', 'YouTube', 'Netflix', '游戏平台', '国外流量']) {
+    for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', 'Google', 'GitHub', 'Microsoft', 'Apple', 'Telegram', 'X', 'YouTube', '流媒体', 'WhatsApp', '游戏平台', '国外流量']) {
       const options = c['proxy-groups'].find(g => g.name === name).proxies;
       assert.deepEqual(options.filter(option => /聚合$|^其他地区$/.test(option)), ['香港聚合', '美国聚合'], name);
     }
@@ -81,9 +81,14 @@ for (const file of SCRIPTS) {
       assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], '全球手动', name);
     }
     for (const name of ['Microsoft', 'Apple', '游戏平台']) assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], 'DIRECT');
-    for (const name of ['Google', 'GitHub', 'X', 'YouTube', 'Netflix', 'Telegram']) {
+    for (const name of ['Google', 'GitHub', 'X', 'YouTube', '流媒体', 'Telegram', 'WhatsApp']) {
       assert.equal(c['proxy-groups'].find(g => g.name === name)['default-selected'], '全球手动', name);
     }
+    for (const provider of ['SKULL_Netflix', 'SKULL_Disney', 'SKULL_PrimeVideo', 'SKULL_HBO', 'SKULL_Spotify', 'SKULL_TikTok']) {
+      assert.ok(c.rules.includes(`RULE-SET,${provider},流媒体`), provider);
+    }
+    assert.ok(c.rules.includes('RULE-SET,SKULL_WhatsApp,WhatsApp'));
+    assert.equal(c.rules.filter(rule => rule.endsWith(',流媒体') || rule === 'RULE-SET,SKULL_NetflixIP,流媒体,no-resolve').length, 7);
     assert.equal(c['proxy-groups'].find(g => g.name === '漏网之鱼').proxies[0], '国外流量');
     assert.ok(c.rules.includes('RULE-SET,SKULL_ChinaIP,DIRECT'));
     assert.equal(c.rules.at(-1), 'MATCH,漏网之鱼');
@@ -252,7 +257,7 @@ for (const file of SCRIPTS) {
     assert.deepEqual(sg['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name)).map(g => g.name), ['新加坡聚合']);
     assert.ok(sg['proxy-groups'].some(g => g.name === '新加坡自动'), 'hidden auto group follows its aggregate');
     assert.ok(!sg['proxy-groups'].some(g => /^(?:香港|澳门|台湾|韩国|日本|美国|欧洲|其他)/.test(g.name)), 'no empty region groups');
-    assert.equal(sg['proxy-groups'].length, 18);
+    assert.equal(sg['proxy-groups'].length, 19);
     references(sg);
 
     // 只有无法归类的节点（土耳其）：只建 其他地区。
@@ -264,7 +269,7 @@ for (const file of SCRIPTS) {
     const remote = {proxies: [], 'proxy-providers': {airport: {type: 'http', url: 'https://example.com/sub.yaml', path: './providers/airport.yaml'}}};
     const unknown = execute(file, remote);
     assert.equal(unknown['proxy-groups'].filter(g => /聚合$|^其他地区$/.test(g.name)).length, 9);
-    assert.equal(unknown['proxy-groups'].length, 34);
+    assert.equal(unknown['proxy-groups'].length, 35);
 
     // 旧配置引用了被跳过的地区组：改指 国外流量，不留悬空引用。
     const stale = {
@@ -315,7 +320,7 @@ test('FlClash: defaults inherit Bettbox routing with current-repository patches'
     const flclash = execute(SCRIPTS[2], fixture(name), {noFromEntries: true});
     assert.deepEqual(flclash['proxy-groups'], bettbox['proxy-groups']);
     assert.deepEqual(flclash.rules, bettbox.rules);
-    assert.equal(flclash.rules.length, 41);
+    assert.equal(flclash.rules.length, 47);
     assert.deepEqual(flclash['rule-providers'], bettbox['rule-providers']);
     assert.deepEqual(flclash.dns['nameserver-policy'], bettbox.dns['nameserver-policy']);
     assert.equal(flclash.dns['direct-nameserver-follow-policy'], true);
@@ -356,7 +361,7 @@ test('Clash Verge / Bettbox: defaults agree except system NTP direct routes', ()
   }
 });
 test('Bettbox: service and region toggles leave no broken references', () => {
-  const names = ['ChatGPT', 'Claude', 'Gemini / NotebookLM', 'Google', 'GitHub', 'Microsoft', 'Apple', 'Telegram', 'X', 'YouTube', 'Netflix', '游戏平台', '地区分组'];
+  const names = ['ChatGPT', 'Claude', 'Gemini / NotebookLM', 'Google', 'GitHub', 'Microsoft', 'Apple', 'Telegram', 'X', 'YouTube', '流媒体', 'WhatsApp', '游戏平台', '地区分组'];
   for (const name of names) {
     const c = execute(SCRIPTS[1], fixture('provider-only'), {toggles: {[name]: false}, noFromEntries: true});
     references(c);

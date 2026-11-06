@@ -10,14 +10,14 @@
 
 脚本保留订阅里的 `proxies` / `proxy-providers`，**重建**主策略组、分流规则、Rule Providers 和整段 DNS。因此换机场通常不用改脚本。
 
-每次执行产出：**16 个固定主策略组 + 每个「订阅里真的有节点」的地区 2 组**（可见聚合组 + 隐藏 `url-test`；9 个地区全有时共 34 组，单地区机场 18 组）、**34 个 `SKULL_*` Rule Provider**（31 个上游 `.mrs` 经 jsDelivr `@meta` + 3 个自维护 `domain/text` 经 Raw）、**39 / 41 / 41 条规则**、完整 `dns` 段。
+每次执行产出：**17 个固定主策略组 + 每个「订阅里真的有节点」的地区 2 组**（可见聚合组 + 隐藏 `url-test`；9 个地区全有时共 35 组，单地区机场 19 组）、**40 个 `SKULL_*` Rule Provider**（37 个上游 `.mrs` 经 jsDelivr `@meta` + 3 个自维护 `domain/text` 经 Raw）、**45 / 47 / 47 条规则**、完整 `dns` 段。
 
 ## 2. 目录地图
 
 | 路径 | 作用 | 关键点 |
 | --- | --- | --- |
 | `Clash-Verge-Rev-mihomoScript.js` | 桌面端入口 `main(config, profileName)` | 会写 `tun` 缺省项、`mode`、`find-process-mode: strict` |
-| `Bettbox-mihomoScript.js` | Android 入口 `main(config)` | 顶层声明 `ruleOptionsEnable`（13 个开关）与 `serviceConfigs`（图标）；不写 `tun` |
+| `Bettbox-mihomoScript.js` | Android 入口 `main(config)` | 顶层声明 `ruleOptionsEnable`（14 个开关）与 `serviceConfigs`（图标）；不写 `tun` |
 | `FlClash-mihomoScript.js` | 多平台入口 `main(config)` | QuickJS 安全：**不用 `Object.fromEntries`、`Intl`**；客户端字段一律不写 |
 | `rules/direct.list` | `SKULL_CustomDirect`，先于 CN 分类直连 | 只写域名，一行一个 |
 | `rules/proxy.list` | `SKULL_CustomProxy`，先于 CN 分类走 `国外流量` | 同上 |
@@ -44,7 +44,7 @@
    | `全球手动` / `自动选择` / `国外流量` | `select` / `url-test` / `select` | 无 `DIRECT` | 首位 / 全节点测速 / **`default-selected: 全球手动`** |
    | `漏网之鱼` | `select` | `国外流量`→`自动选择`→`全球手动`→`DIRECT` | `国外流量` |
    | AI 三组 | `select` | 自动选择 / 全球手动 / 订阅实际地区的聚合组 | **`default-selected: 全球手动`**，无 `DIRECT` |
-   | Google / GitHub / X / YouTube / Netflix / Telegram | `select` | 上述 + `DIRECT` | **`default-selected: 全球手动`** |
+   | Google / GitHub / X / YouTube / 流媒体 / Telegram / WhatsApp | `select` | 上述 + `DIRECT` | **`default-selected: 全球手动`** |
    | Microsoft / Apple / 游戏平台 | `select` | 同上 | **`default-selected: DIRECT`** |
    | 地区聚合 1–9 | `select` | 该地区隐藏自动组 + 该地区全部节点；**完整且可确认的清单里没有该地区节点时不建组；未知时保留全部地区**；归属只看节点名第一个 `｜` / `|` 之前的部分，中转标签不参与判定 | 首位 |
    | 地区自动 1–9 | `url-test` | `hidden: true`，只供聚合组调用；与聚合组一一对应 | — |
@@ -129,7 +129,7 @@ node -e 'const {execute,SCRIPTS}=require("./tests/helpers");for(const f of SCRIP
 - **Mermaid 10 与 11 的布局宽度不同**：GitHub 用 10.x，本地验证要以 10.9.1 为准；宽度尽量压在 950px 以内，否则被缩成小字。
 - **GitHub 的 Mermaid 在跨域 iframe 里渲染**：页面 DOM 查不到图内 `<svg>` 是正常的，判断标准是 `iframe[src*="markdown/mermaid"]` 的数量。
 - **客户端会在脚本之后回写自己的设置**：`mode`、`unified-delay`、顶层 `ipv6`、`find-process-mode`、TUN 全部以 App 为准，脚本里写了也可能被覆盖——不要承诺「脚本已强制」。
-- **别写死 34 组**：地区组数量由订阅节点决定——`direct-proxies.json` 只有香港 / 美国 → 20 组，`provider-only.json` 只有 NRT → 18 组，`mixed-provider.json` 是新加坡 + 台湾 → 20 组。断言组数前先看 fixture 里到底有哪些地区；远端/file fallback、未知或畸形 inline 清单、不确定 regexp2/改名都会退回 9 个地区全保留。
+- **别写死 35 组**：地区组数量由订阅节点决定——`direct-proxies.json` 只有香港 / 美国 → 21 组，`provider-only.json` 只有 NRT → 19 组，`mixed-provider.json` 是新加坡 + 台湾 → 21 组。断言组数前先看 fixture 里到底有哪些地区；远端/file fallback、未知或畸形 inline 清单、不确定 regexp2/改名都会退回 9 个地区全保留。
 - **Bettbox / FlClash 的 DNS 覆写**：客户端一旦开启 DNS 覆写，脚本的 `nameserver-policy`、`direct-nameserver` 会被重新生成覆盖，README 已要求用户关闭，排查问题时先问这一项。
 
 ## 8.1 地区归属的两个易错点

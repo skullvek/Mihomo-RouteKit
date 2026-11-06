@@ -15,7 +15,8 @@ var ruleOptionsEnable = {
   Telegram: true,
   X: true,
   YouTube: true,
-  Netflix: true,
+  "流媒体": true,
+  WhatsApp: true,
   "游戏平台": true,
   "地区分组": true
 };
@@ -32,13 +33,14 @@ var serviceConfigs = [
   { name: "Telegram", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Telegram.png" },
   { name: "X", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Twitter(X).png" },
   { name: "YouTube", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/YouTube.png" },
-  { name: "Netflix", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Netflix.png" },
+  { name: "流媒体", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Streaming.png" },
+  { name: "WhatsApp", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/WhatsApp.png" },
   { name: "游戏平台", icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Game.png" },
   { name: "地区分组", icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/World_Map.png" }
 ];
 
 // Bettbox Android 全局覆写脚本
-// Version: 2026.11.03-r1
+// Version: 2026.11.06-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：设置 -> 高级设置 -> 脚本；配置 -> 订阅 -> 覆写 -> 脚本。
 
@@ -172,7 +174,8 @@ function main(config) {
     telegram: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Telegram.png",
     x: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Twitter(X).png",
     youtube: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/YouTube.png",
-    netflix: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Netflix.png",
+    media: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Streaming.png",
+    whatsapp: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/WhatsApp.png",
     games: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Game.png",
 
     hk: "https://flagcdn.com/w160/hk.png",
@@ -628,9 +631,10 @@ function main(config) {
     serviceSelect("GitHub", ICON.github),
     serviceSelect("X", ICON.x),
     serviceSelect("YouTube", ICON.youtube),
-    serviceSelect("Netflix", ICON.netflix),
+    serviceSelect("流媒体", ICON.media),
     serviceSelect("Telegram", ICON.telegram),
-    // Microsoft / Apple / 游戏平台首次默认 DIRECT，其余六个服务组默认「全球手动」。
+    serviceSelect("WhatsApp", ICON.whatsapp),
+    // Microsoft / Apple / 游戏平台首次默认 DIRECT，其余七个服务组默认「全球手动」。
     serviceSelect("Microsoft", ICON.microsoft, "DIRECT"),
     serviceSelect("Apple", ICON.apple, "DIRECT"),
     serviceSelect("游戏平台", ICON.games, "DIRECT"),
@@ -664,7 +668,8 @@ function main(config) {
     "Telegram",
     "X",
     "YouTube",
-    "Netflix",
+    "流媒体",
+    "WhatsApp",
     "游戏平台"
   ];
 
@@ -721,9 +726,15 @@ function main(config) {
     SKULL_AppleCN: domainProvider("apple@cn.mrs"),
     SKULL_Apple: domainProvider("apple.mrs"),
     SKULL_Telegram: domainProvider("telegram.mrs"),
+    SKULL_WhatsApp: domainProvider("whatsapp.mrs"),
     SKULL_X: domainProvider("x.mrs"),
     SKULL_YouTube: domainProvider("youtube.mrs"),
     SKULL_Netflix: domainProvider("netflix.mrs"),
+    SKULL_Disney: domainProvider("disney.mrs"),
+    SKULL_PrimeVideo: domainProvider("primevideo.mrs"),
+    SKULL_HBO: domainProvider("hbo.mrs"),
+    SKULL_Spotify: domainProvider("spotify.mrs"),
+    SKULL_TikTok: domainProvider("tiktok.mrs"),
     SKULL_GamesCN: domainProvider("category-games@cn.mrs"),
     SKULL_GamesDownloadCN: domainProvider("category-game-platforms-download@cn.mrs"),
     SKULL_Steam: domainProvider("steam.mrs"),
@@ -1052,8 +1063,14 @@ function main(config) {
     `RULE-SET,SKULL_Microsoft,${serviceTarget("Microsoft")}`,
     `RULE-SET,SKULL_Apple,${serviceTarget("Apple")}`,
     `RULE-SET,SKULL_Telegram,${serviceTarget("Telegram")}`,
+    `RULE-SET,SKULL_WhatsApp,${serviceTarget("WhatsApp")}`,
     `RULE-SET,SKULL_X,${serviceTarget("X")}`,
-    `RULE-SET,SKULL_Netflix,${serviceTarget("Netflix")}`,
+    `RULE-SET,SKULL_Netflix,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_Disney,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_PrimeVideo,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_HBO,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_Spotify,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_TikTok,${serviceTarget("流媒体")}`,
 
     // 中国大陆域名
     "RULE-SET,SKULL_China,DIRECT",
@@ -1066,7 +1083,7 @@ function main(config) {
     `RULE-SET,SKULL_GoogleIP,${serviceTarget("Google")},no-resolve`,
     `RULE-SET,SKULL_TelegramIP,${serviceTarget("Telegram")},no-resolve`,
     `RULE-SET,SKULL_XIP,${serviceTarget("X")},no-resolve`,
-    `RULE-SET,SKULL_NetflixIP,${serviceTarget("Netflix")},no-resolve`,
+    `RULE-SET,SKULL_NetflixIP,${serviceTarget("流媒体")},no-resolve`,
 
     // 中国 IP 作为未知域名的最终国内兜底
     "RULE-SET,SKULL_ChinaIP,DIRECT",

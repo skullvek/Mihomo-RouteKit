@@ -21,7 +21,7 @@ for (const script of SCRIPTS) {
   ].map(name => ({name, type: 'ss'}))}});
   cases.push({script, label: 'empty', input: {}});
 }
-const services = ['ChatGPT', 'Claude', 'Gemini / NotebookLM', 'Google', 'GitHub', 'Microsoft', 'Apple', 'Telegram', 'X', 'YouTube', 'Netflix', '游戏平台', '地区分组'];
+const services = ['ChatGPT', 'Claude', 'Gemini / NotebookLM', 'Google', 'GitHub', 'Microsoft', 'Apple', 'Telegram', 'X', 'YouTube', '流媒体', 'WhatsApp', '游戏平台', '地区分组'];
 for (const name of services) {
   cases.push({script: SCRIPTS[1], label: 'disabled-' + name, input: fixture('provider-only'), options: {toggles: {[name]: false}}});
 }

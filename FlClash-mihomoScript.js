@@ -1,5 +1,5 @@
 // FlClash 扩展脚本（Android / Windows / macOS / Linux）
-// Version: 2026.11.03-r1
+// Version: 2026.11.06-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：新建脚本并粘贴全文；当前订阅 -> 扩展/覆写 -> 脚本，选中本脚本。
 // 在客户端使用规则模式，关闭 DNS 覆写及“追加系统 DNS”；TUN/VPN 由 FlClash 管理。
@@ -125,7 +125,8 @@ function main(config) {
     telegram: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Telegram.png",
     x: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Twitter(X).png",
     youtube: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/YouTube.png",
-    netflix: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Netflix.png",
+    media: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Streaming.png",
+    whatsapp: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/WhatsApp.png",
     games: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Game.png",
 
     hk: "https://flagcdn.com/w160/hk.png",
@@ -579,9 +580,10 @@ function main(config) {
     serviceSelect("GitHub", ICON.github),
     serviceSelect("X", ICON.x),
     serviceSelect("YouTube", ICON.youtube),
-    serviceSelect("Netflix", ICON.netflix),
+    serviceSelect("流媒体", ICON.media),
     serviceSelect("Telegram", ICON.telegram),
-    // Microsoft / Apple / 游戏平台首次默认 DIRECT，其余六个服务组默认「全球手动」。
+    serviceSelect("WhatsApp", ICON.whatsapp),
+    // Microsoft / Apple / 游戏平台首次默认 DIRECT，其余七个服务组默认「全球手动」。
     serviceSelect("Microsoft", ICON.microsoft, "DIRECT"),
     serviceSelect("Apple", ICON.apple, "DIRECT"),
     serviceSelect("游戏平台", ICON.games, "DIRECT"),
@@ -623,9 +625,15 @@ function main(config) {
     SKULL_AppleCN: domainProvider("apple@cn.mrs"),
     SKULL_Apple: domainProvider("apple.mrs"),
     SKULL_Telegram: domainProvider("telegram.mrs"),
+    SKULL_WhatsApp: domainProvider("whatsapp.mrs"),
     SKULL_X: domainProvider("x.mrs"),
     SKULL_YouTube: domainProvider("youtube.mrs"),
     SKULL_Netflix: domainProvider("netflix.mrs"),
+    SKULL_Disney: domainProvider("disney.mrs"),
+    SKULL_PrimeVideo: domainProvider("primevideo.mrs"),
+    SKULL_HBO: domainProvider("hbo.mrs"),
+    SKULL_Spotify: domainProvider("spotify.mrs"),
+    SKULL_TikTok: domainProvider("tiktok.mrs"),
     SKULL_GamesCN: domainProvider("category-games@cn.mrs"),
     SKULL_GamesDownloadCN: domainProvider("category-game-platforms-download@cn.mrs"),
     SKULL_Steam: domainProvider("steam.mrs"),
@@ -948,8 +956,14 @@ function main(config) {
     "RULE-SET,SKULL_Microsoft,Microsoft",
     "RULE-SET,SKULL_Apple,Apple",
     "RULE-SET,SKULL_Telegram,Telegram",
+    "RULE-SET,SKULL_WhatsApp,WhatsApp",
     "RULE-SET,SKULL_X,X",
-    "RULE-SET,SKULL_Netflix,Netflix",
+    "RULE-SET,SKULL_Netflix,流媒体",
+    "RULE-SET,SKULL_Disney,流媒体",
+    "RULE-SET,SKULL_PrimeVideo,流媒体",
+    "RULE-SET,SKULL_HBO,流媒体",
+    "RULE-SET,SKULL_Spotify,流媒体",
+    "RULE-SET,SKULL_TikTok,流媒体",
 
     // 中国大陆域名
     "RULE-SET,SKULL_China,DIRECT",
@@ -962,7 +976,7 @@ function main(config) {
     "RULE-SET,SKULL_GoogleIP,Google,no-resolve",
     "RULE-SET,SKULL_TelegramIP,Telegram,no-resolve",
     "RULE-SET,SKULL_XIP,X,no-resolve",
-    "RULE-SET,SKULL_NetflixIP,Netflix,no-resolve",
+    "RULE-SET,SKULL_NetflixIP,流媒体,no-resolve",
 
     // 中国 IP 作为未知域名的最终国内兜底
     "RULE-SET,SKULL_ChinaIP,DIRECT",
