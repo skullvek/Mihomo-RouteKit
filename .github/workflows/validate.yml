@@ -1,0 +1,63 @@
+name: Validate scripts
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check JavaScript syntax
+        run: |
+          node --check Clash-Verge-Rev-mihomoScript.js
+          node --check Bettbox-mihomoScript.js
+          node --check FlClash-mihomoScript.js
+          for script in tests/*.js; do node --check "$script"; done
+      - name: Validate behavior, references and rule files
+        run: node --test tests/validate.js tests/repair.test.js
+      # Fixed repository scripts only; no event/user text is interpolated into shell commands.
+      - name: Check performance budgets and full output equivalence
+        run: node tests/performance-ci.js
+      - name: Upload performance audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: routekit-performance
+          path: ${{ runner.temp }}/routekit-performance.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Install real QuickJS engine
+        run: python -m pip install quickjs==1.19.4
+      - name: Check QuickJS behavior against Node
+        run: python tests/quickjs_check.py
+      - name: Download pinned Mihomo v1.19.33 (Linux amd64)
+        run: |
+          mkdir -p "$RUNNER_TEMP/mihomo"
+          curl --fail --location --retry 3 \
+            https://github.com/MetaCubeX/mihomo/releases/download/v1.19.33/mihomo-linux-amd64-v1.19.33.gz \
+            --output "$RUNNER_TEMP/mihomo/mihomo.gz"
+          gunzip "$RUNNER_TEMP/mihomo/mihomo.gz"
+          chmod 755 "$RUNNER_TEMP/mihomo/mihomo"
+      - name: Validate synthetic full configs and isolated core runtime membership
+        run: node tests/mihomo-ci.js "$RUNNER_TEMP/mihomo/mihomo"
+      - name: Upload synthetic core evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-mihomo-evidence
+          path: ${{ runner.temp }}/mihomo-ci-*/
+          retention-days: 7

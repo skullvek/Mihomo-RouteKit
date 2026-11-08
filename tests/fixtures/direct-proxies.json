@@ -1,0 +1,1 @@
+{"proxies":[{"name":"香港01","type":"ss","server":"192.0.2.1","port":443,"cipher":"aes-128-gcm","password":"test"},{"name":"美国02","type":"ss","server":"192.0.2.2","port":443,"cipher":"aes-128-gcm","password":"test"}]}

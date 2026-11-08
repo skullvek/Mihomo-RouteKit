@@ -1,0 +1,1 @@
+{"proxies":[{"name":"SIN IEPL 02","type":"ss","server":"192.0.2.1","port":443,"cipher":"aes-128-gcm","password":"test"}],"proxy-providers":{"airport":{"type":"inline","payload":[{"name":"TPE Hinet","type":"ss","server":"192.0.2.2","port":443,"cipher":"aes-128-gcm","password":"test"}],"health-check":{"enable":false,"url":"https://example.com/check","interval":1200}}}}

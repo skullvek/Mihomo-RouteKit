@@ -1,0 +1,1 @@
+{"proxies":[{"name":"A","type":"ss","server":"192.0.2.1","port":443,"cipher":"aes-128-gcm","password":"test","dialer-proxy":"Group B"}],"proxy-groups":[{"name":"Group B","type":"select","proxies":["A"]}]}

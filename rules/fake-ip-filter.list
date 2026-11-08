@@ -1,0 +1,5 @@
+# Domain/text: additional compatibility exclusions; does not change traffic routing.
+# Static LAN/NTP foundations stay in both scripts even if this file cannot be fetched.
++.pool.ntp.org
++.msftconnecttest.com
++.msftncsi.com

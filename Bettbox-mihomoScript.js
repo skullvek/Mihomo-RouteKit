@@ -15,7 +15,9 @@ var ruleOptionsEnable = {
   Telegram: true,
   X: true,
   YouTube: true,
-  Netflix: true,
+  "流媒体": true,
+  WhatsApp: true,
+  "游戏平台": true,
   "地区分组": true
 };
 
@@ -31,13 +33,15 @@ var serviceConfigs = [
   { name: "Telegram", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Telegram.png" },
   { name: "X", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Twitter(X).png" },
   { name: "YouTube", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/YouTube.png" },
-  { name: "Netflix", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Netflix.png" },
+  { name: "流媒体", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Streaming.png" },
+  { name: "WhatsApp", icon: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/WhatsApp.png" },
+  { name: "游戏平台", icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Game.png" },
   { name: "地区分组", icon: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/World_Map.png" }
 ];
 
 // Bettbox Android 全局覆写脚本
-// Version: 2026.09.27-r1
-// 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点）。
+// Version: 2026.11.08-r1
+// 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：设置 -> 高级设置 -> 脚本；配置 -> 订阅 -> 覆写 -> 脚本。
 
 function main(config) {
@@ -73,6 +77,10 @@ function main(config) {
   const isProxyCandidate = (proxy) =>
     proxy && !BYPASS_TYPES.includes(String(proxy.type || "").toLowerCase());
 
+  // 订阅字段类型防御：listeners / tunnels / inline payload 正常是数组，畸形订阅可能写成对象。
+  // 直接 for...of 会抛错，异常逃出 main() 后整份覆写会被客户端丢弃（CVR 回退原配置）。
+  const asArray = (value) => (Array.isArray(value) ? value : []);
+
   // ---------- 诊断收集 ----------
   // Bettbox 的 State.handleEvaluate 在脚本抛错时回退到原配置（返回未修改的 config），
   // 并把错误以通知条形式展示给用户。这比静默失败好，但后果仍是"整套脚本白跑一遍"。
@@ -84,8 +92,13 @@ function main(config) {
     console.error(`[SKULL] ${message}`);
   };
 
+  // 提示性日志：只打到 console，不计入 issues（issues 只统计被降级处理的异常）。
+  const note = (message) => {
+    console.error(`[SKULL] ${message}`);
+  };
+
   // provider 节点的 url-test 依赖 provider 自身 health-check 数据。
-  // 仅补齐缺失项并强制启用，不覆盖机场已有的 url / interval / timeout 等配置。
+  // 仅补齐缺失项，尊重机场显式 enable=false，不覆盖已有的 url / interval / timeout 等配置。
   const ensureProviderHealthCheck = (provider) => {
     if (!provider || typeof provider !== "object" || Array.isArray(provider)) {
       return;
@@ -139,7 +152,7 @@ function main(config) {
 
   // 仅排除明确的信息/提醒节点，避免误伤“香港01｜不限流量”等正常节点。
   const PSEUDO_PATTERN_BODY =
-    "到期|过期|剩余(?:流量|时间|天数|[:：]|\\s*\\d)|流量(?:剩余|到期|重置|[:：]\\s*\\d)|套餐(?:到期|剩余|[:：])|官网(?:地址)?|网址|订阅(?:到期|更新|地址)|(?:下次|距离).*重置|公告(?:[:：]|$)|通知(?:[:：]|$)|提示(?:[:：]|$)|教程(?:[:：]|$)|使用说明|使用须知|客服(?:[:：]|$)|联系(?:客服)?|有超时|超时.*重启|请.*重启网络|重启.*网络|Expire(?:d)?(?:\\s*[:：]|\\s*\\d|$)|Traffic(?:\\s*(?:Left|Remaining)|[:：]\\s*\\d)|Remaining(?:\\s*Traffic)?|Website(?:\\s*[:：]|$)";
+    "到期|过期|剩余(?:流量|时间|天数|[:：]|\\s*\\d)|流量(?:剩余|到期|重置|[:：]\\s*\\d)|套餐(?:到期|剩余|[:：])|官网(?:地址)?|网址|订阅(?:到期|更新|地址)|(?:更新|刷新)\\s*订阅|(?:下次|距离).*重置|公告(?:[:：]|$)|通知(?:[:：]|$)|提示(?:[:：]|$)|教程(?:[:：]|$)|使用说明|使用须知|客服(?:邮箱|邮件|电邮)?\\s*(?:[:：]|$)|(?:^|[^A-Za-z])(?:TG|Telegram)\\s*(?:交流[群组]|群组|群|频道)\\s*(?:[:：|｜@]|$)|联系(?:客服)?|有超时|超时.*重启|请.*重启网络|重启.*网络|Expire(?:d)?(?:\\s*[:：]|\\s*\\d|$)|Traffic(?:\\s*(?:Left|Remaining)|[:：]\\s*\\d)|Remaining(?:\\s*Traffic)?|Website(?:\\s*[:：]|$)|(?:^|[^A-Za-z])(?:USED|TOTAL)(?:\\s*[:：]\\s*\\d)|(?:^|[^A-Za-z])(?:EMAIL|Panel|Channel|Author)\\s*[:：]|工单\\s*[:：]";
 
   const EXCLUDE = `(?i)(${PSEUDO_PATTERN_BODY})`;
 
@@ -161,7 +174,9 @@ function main(config) {
     telegram: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Telegram.png",
     x: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Twitter(X).png",
     youtube: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/YouTube.png",
-    netflix: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Netflix.png",
+    media: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/Streaming.png",
+    whatsapp: "https://fastly.jsdelivr.net/gh/0xWans/Qure@master/IconSet/Color/WhatsApp.png",
+    games: "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Game.png",
 
     hk: "https://flagcdn.com/w160/hk.png",
     mo: "https://flagcdn.com/w160/mo.png",
@@ -176,18 +191,26 @@ function main(config) {
 
   // ---------- 2. 节点地区筛选 ----------
   const REGION_PATTERN_BODY = {
-    hk: "🇭🇰|香港|Hong ?Kong|(?:^|[^A-Za-z])HK(?:G)?(?:[0-9]|[^A-Za-z]|$)",
-    mo: "🇲🇴|澳门|澳門|Macao|Macau|(?:^|[^A-Za-z])MO(?:[0-9]|[^A-Za-z]|$)",
-    tw: "🇹🇼|台湾|台灣|Taiwan|Taipei|(?:^|[^A-Za-z])TW(?:N)?(?:[0-9]|[^A-Za-z]|$)",
-    sg: "🇸🇬|新加坡|狮城|獅城|Singapore|(?:^|[^A-Za-z])SG(?:P)?(?:[0-9]|[^A-Za-z]|$)",
-    kr: "🇰🇷|韩国|韓國|Korea|Seoul|(?:^|[^A-Za-z])(?:KR|KOR)(?:[0-9]|[^A-Za-z]|$)",
-    jp: "🇯🇵|日本|东京|東京|大阪|Japan|Tokyo|Osaka|(?:^|[^A-Za-z])JP(?:N)?(?:[0-9]|[^A-Za-z]|$)",
-    us: "🇺🇸|美国|美國|美[.·|｜_\\s-]|United ?States|America|Los ?Angeles|洛杉矶|洛杉磯|San ?Jose|圣何塞|聖何塞|Seattle|西雅图|西雅圖|New ?York|纽约|紐約|Phoenix|凤凰城|鳳凰城|Salt ?Lake(?: ?City)?|盐湖城|鹽湖城|San ?Francisco|旧金山|舊金山|Dallas|达拉斯|達拉斯|Chicago|芝加哥|Las ?Vegas|拉斯维加斯|拉斯維加斯|Ashburn|阿什本|Boston|波士顿|波士頓|Miami|迈阿密|邁阿密|Denver|丹佛|Houston|休斯顿|休士頓|Austin|奥斯汀|奧斯汀|Washington ?D\\.?C\\.?|华盛顿(?:特区)?|華盛頓(?:特區)?|(?:^|[^A-Za-z])(?:LAX|SJC|SEA|NYC|PHX|SLC|SFO|DFW|ORD|LAS|IAD|BOS|MIA|DEN|IAH|HOU|DCA|US|USA)(?:[0-9]|[^A-Za-z]|$)",
-    eu: "🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇪🇸|🇮🇹|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇵🇱|🇮🇪|🇦🇹|🇧🇪|🇨🇿|🇩🇰|🇵🇹|🇬🇷|🇮🇸|🇱🇺|欧洲|歐洲|Europe|European|英国|英國|法国|法國|德国|德國|荷兰|荷蘭|西班牙|意大利|瑞士|瑞典|芬兰|挪威|Norway|波兰|爱尔兰|London|Paris|Frankfurt|Amsterdam|Madrid|Milan|Zurich|Stockholm|Helsinki|Oslo|Warsaw|Dublin|(?:^|[^A-Za-z])(?:EU|UK|GB|GBR|DE|DEU|FR|FRA|NL|NLD|ES|ESP|IT|ITA|CH|CHE|SE|SWE|FI|FIN|NOR|PL|POL|IE|IRL|AT|AUT|BE|BEL|CZ|CZE|DK|DNK|PT|PRT|GR|GRC)(?:[0-9]|[^A-Za-z]|$)"
+    hk: "🇭🇰|香港|Hong ?Kong|(?:^|[^A-Za-z｜|])HK(?:G)?(?:[0-9]|[^A-Za-z]|$)",
+    mo: "🇲🇴|澳门|澳門|Macao|Macau|(?:^|[^A-Za-z｜|])MO(?:[0-9]|[^A-Za-z]|$)",
+    tw: "🇹🇼|台湾|台灣|Taiwan|Taipei|(?:^|[^A-Za-z｜|])(?:TW(?:N)?|TPE|TSA|KHH)(?:[0-9]|[^A-Za-z]|$)",
+    sg: "🇸🇬|新加坡|狮城|獅城|Singapore|(?:^|[^A-Za-z｜|])(?:SG(?:P)?|SIN|XSP)(?:[0-9]|[^A-Za-z]|$)",
+    kr: "🇰🇷|韩国|韓國|Korea|Seoul|(?:^|[^A-Za-z｜|])(?:KR|KOR|ICN|GMP)(?:[0-9]|[^A-Za-z]|$)",
+    jp: "🇯🇵|日本|东京|東京|大阪|Japan|Tokyo|Osaka|(?:^|[^A-Za-z｜|])(?:JP(?:N)?|NRT|HND|KIX|CTS|FUK)(?:[0-9]|[^A-Za-z]|$)",
+    us: "🇺🇸|美国|美國|美[.·|｜_\\s-]|United ?States|America|Los ?Angeles|洛杉矶|洛杉磯|San ?Jose|圣何塞|聖何塞|Seattle|西雅图|西雅圖|New ?York|纽约|紐約|Phoenix|凤凰城|鳳凰城|Salt ?Lake(?: ?City)?|盐湖城|鹽湖城|San ?Francisco|旧金山|舊金山|Dallas|达拉斯|達拉斯|Chicago|芝加哥|Las ?Vegas|拉斯维加斯|拉斯維加斯|Ashburn|阿什本|Boston|波士顿|波士頓|Miami|迈阿密|邁阿密|Denver|丹佛|Houston|休斯顿|休士頓|Austin|奥斯汀|奧斯汀|Washington ?D\\.?C\\.?|华盛顿(?:特区)?|華盛頓(?:特區)?|(?:^|[^A-Za-z｜|])(?:LAX|SJC|SEA|NYC|PHX|SLC|SFO|DFW|ORD|LAS|IAD|BOS|MIA|DEN|IAH|HOU|DCA|US|USA)(?:[0-9]|[^A-Za-z]|$)",
+    eu: "🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇪🇸|🇮🇹|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇵🇱|🇮🇪|🇦🇹|🇧🇪|🇨🇿|🇩🇰|🇵🇹|🇬🇷|🇮🇸|🇱🇺|欧洲|歐洲|Europe|European|英国|英國|法国|法國|德国|德國|荷兰|荷蘭|西班牙|意大利|瑞士|瑞典|芬兰|挪威|Norway|波兰|爱尔兰|奥地利|比利时|捷克|丹麦|葡萄牙|希腊|冰岛|卢森堡|维也纳|布鲁塞尔|布拉格|哥本哈根|里斯本|雅典|雷克雅未克|London|Paris|Frankfurt|Amsterdam|Madrid|Milan|Zurich|Stockholm|Helsinki|Oslo|Warsaw|Dublin|Vienna|Brussels|Prague|Copenhagen|Lisbon|Athens|Reykjavik|(?:^|[^A-Za-z｜|])(?:EU|UK|GB|GBR|DE|DEU|FR|FRA|NL|NLD|ES|ESP|IT|ITA|CH|CHE|SE|SWE|FI|FIN|NOR|PL|POL|IE|IRL|AT|AUT|BE|BEL|CZ|CZE|DK|DNK|PT|PRT|GR|GRC)(?:[0-9]|[^A-Za-z]|$)"
   };
 
   // 地区优先级：香港 → 澳门 → 台湾 → 新加坡 → 韩国 → 日本 → 美国 → 欧洲 → 其他
   const REGION_KEYS = ["hk", "mo", "tw", "sg", "kr", "jp", "us", "eu"];
+
+  // 地区归属只看节点名第一个 ｜ / | 之前的部分：中转标签不参与判定，
+  // 开头没有已知地区标识（含 🇧🇷 这类未收录国旗）的节点归「其他地区」。
+  const LEADING_BODY = {};
+  for (let i = 0; i < REGION_KEYS.length; i += 1) {
+    const key = REGION_KEYS[i];
+    LEADING_BODY[key] = `^(?:[^｜|]*)(?:${REGION_PATTERN_BODY[key]})`;
+  }
 
   // QuickJS 兼容：不用 Object.fromEntries。
   const FILTER = {};
@@ -195,11 +218,11 @@ function main(config) {
 
   for (let i = 0; i < REGION_KEYS.length; i += 1) {
     const key = REGION_KEYS[i];
-    FILTER[key] = `(?i)(${REGION_PATTERN_BODY[key]})`;
+    FILTER[key] = `(?i)(${LEADING_BODY[key]})`;
 
     const higherPriorityPatterns = [];
     for (let j = 0; j < i; j += 1) {
-      higherPriorityPatterns.push(REGION_PATTERN_BODY[REGION_KEYS[j]]);
+      higherPriorityPatterns.push(LEADING_BODY[REGION_KEYS[j]]);
     }
 
     REGION_EXCLUDE[key] = higherPriorityPatterns.length > 0
@@ -208,18 +231,74 @@ function main(config) {
   }
 
   const MANUAL_REGION_TESTS = REGION_KEYS.map(
-    (key) => new RegExp(`(?:${REGION_PATTERN_BODY[key]})`, "i")
+    (key) => new RegExp(LEADING_BODY[key], "i")
   );
 
   const regionPatternList = [];
   for (let i = 0; i < REGION_KEYS.length; i += 1) {
-    regionPatternList.push(REGION_PATTERN_BODY[REGION_KEYS[i]]);
+    regionPatternList.push(LEADING_BODY[REGION_KEYS[i]]);
   }
 
   const OTHER_EXCLUDE =
     `(?i)(${PSEUDO_PATTERN_BODY}|${regionPatternList.join("|")})`;
 
   const PSEUDO_NODE_RE = new RegExp(`(?:${PSEUDO_PATTERN_BODY})`, "i");
+
+  // ---------- 2.1 地区可用性 ----------
+  // 机场只卖部分地区时，空的地区组照样占位，切过去等于断网。
+  // 这里按节点名判断“这个地区到底有没有节点”，只给有节点的地区建组。
+  // provider 远端节点在扩展脚本阶段枚举不到：只要有一处无法确认就退回“全部保留”，
+  // 宁可多显示一个空组，也不误删有节点的地区。
+  // 三值匹配：true / false / null（无法证明与 regexp2 等价）。
+  // 未知只允许保守保留地区，不能据此确认循环。自建地区表达式由脚本控制。
+  // 缓存仅限本次 main；保留逐名称、逐 trusted 的三值安全检查。
+  // 表达式无 g/y 标志，可复用；编译失败缓存为 null，仍表示未知而非不匹配。
+  const compiledPatterns = new Map();
+  const patternMatches = (pattern, name, trusted = false) => {
+    if (!pattern) return false;
+    if (typeof pattern !== "string" || typeof name !== "string") return null;
+    let unknown = false;
+    for (const part of pattern.split("`")) {
+      const flags = part.indexOf("(?i)") === 0 ? "i" : "";
+      const body = flags ? part.slice(4) : part;
+      if (!trusted) {
+        // 只推断可确认的共同子集；不靠加 u 标志假装支持 .NET/Unicode。
+        const unescaped = body.replace(/\\[\\.^$|?*+()[\]{}\/-]/g, "");
+        if (/\\|\(\?(?!:)|\[\^|\-\[|\.|[\uD800-\uDFFF]/.test(unescaped) ||
+            (/[$^]/.test(body) && /[\r\n\u2028\u2029]/.test(name)) ||
+            (flags && /[^\x00-\x7F]/.test(body + name))) {
+          unknown = true;
+          continue;
+        }
+      }
+      let expression = compiledPatterns.get(part);
+      if (expression === undefined) {
+        try {
+          expression = new RegExp(body, flags);
+        } catch (_) {
+          expression = null;
+        }
+        compiledPatterns.set(part, expression);
+      }
+      if (expression === null) unknown = true;
+      else if (expression.test(name)) return true;
+    }
+    return unknown ? null : false;
+  };
+
+  const memberStatus = (proxy, options, forGroup = false, explicit = false, trusted = false) => {
+    const include = explicit || !options.filter ? true : patternMatches(options.filter, proxy.name, trusted);
+    const exclude = patternMatches(options["exclude-filter"], proxy.name, trusted);
+    const rawType = String(proxy.type || "").toLowerCase();
+    // provider 按原 YAML 类型，组按 AdapterType.String() 类型排除。
+    const type = forGroup
+      ? ({ ss: "shadowsocks", ssr: "shadowsocksr", select: "selector" }[rawType] || rawType.replace(/-/g, ""))
+      : rawType;
+    const excludedType = String(options["exclude-type"] || "").toLowerCase().split("|").includes(type);
+    if (include === false || exclude === true || (type && excludedType)) return false;
+    if (include === null || exclude === null || (options["exclude-type"] && !type)) return null;
+    return true;
+  };
 
   const manualRegionRank = (name) => {
     for (let i = 0; i < MANUAL_REGION_TESTS.length; i += 1) {
@@ -228,40 +307,83 @@ function main(config) {
     return MANUAL_REGION_TESTS.length;
   };
 
-  // QuickJS / Android 兼容：不依赖 Intl.localeCompare。
-  const naturalCompare = (a, b) => {
-    const ax = String(a).toLowerCase().split(/(\d+)/);
-    const bx = String(b).toLowerCase().split(/(\d+)/);
-    const length = Math.max(ax.length, bx.length);
-
-    for (let i = 0; i < length; i += 1) {
-      const x = ax[i];
-      const y = bx[i];
-
-      if (x === undefined) return -1;
-      if (y === undefined) return 1;
-      if (x === y) continue;
-
-      const xIsNumber = /^\d+$/.test(x);
-      const yIsNumber = /^\d+$/.test(y);
-
-      if (xIsNumber && yIsNumber) {
-        const xn = x.replace(/^0+(?=\d)/, "");
-        const yn = y.replace(/^0+(?=\d)/, "");
-
-        if (xn.length !== yn.length) return xn.length - yn.length;
-        if (xn !== yn) return xn < yn ? -1 : 1;
-        if (x.length !== y.length) return x.length - y.length;
+  // 只有完整、可预测的 inline 清单可以证明某地区不存在。
+  // HTTP/file payload 是 fallback，不代表稍后加载的远端/文件清单。
+  const collectKnownNodes = () => {
+    const names = [];
+    for (const proxy of asArray(config.proxies)) {
+      if (!isProxyCandidate(proxy) || typeof proxy.name !== "string" || !proxy.name) continue;
+      if (!PSEUDO_NODE_RE.test(proxy.name)) names.push(proxy.name);
+    }
+    let complete = true;
+    for (const providerName of providerNames) {
+      const provider = providers[providerName];
+      if (!provider || provider.type !== "inline" || !Array.isArray(provider.payload)) {
+        complete = false;
         continue;
       }
-
-      return x < y ? -1 : 1;
+      const override = provider.override || {};
+      if (typeof override !== "object" || Array.isArray(override) ||
+          [override["proxy-name"], override["override-expr"]].some(
+            (value) => value !== undefined && (!Array.isArray(value) || value.length > 0)
+          ) ||
+          [override["additional-prefix"], override["additional-suffix"]].some(
+            (value) => value !== undefined && typeof value !== "string"
+          )) {
+        complete = false;
+        continue;
+      }
+      for (const proxy of provider.payload) {
+        if (!proxy || typeof proxy.name !== "string" || !proxy.name ||
+            typeof proxy.type !== "string" || !proxy.type) {
+          complete = false;
+          continue;
+        }
+        // 内核先过滤原始 name/type，再应用 override；地区归属才看最终名。
+        const accepted = memberStatus(proxy, provider);
+        if (accepted === null) complete = false;
+        if (accepted !== true || !isProxyCandidate(proxy)) continue;
+        const name = `${override["additional-prefix"] || ""}${proxy.name}${override["additional-suffix"] || ""}`;
+        if (!PSEUDO_NODE_RE.test(name)) names.push(name);
+      }
     }
-
-    return 0;
+    return { names, complete };
   };
 
-  const manualProxyNames = Array.isArray(config.proxies)
+  const REGION_AVAILABILITY = (() => {
+    const known = collectKnownNodes();
+    if (!known.complete) {
+      return { unknown: true, keys: REGION_KEYS.slice(), other: true };
+    }
+    // names 已排除伪节点；首个匹配地区等价于 filter + 高优先级排除。
+    // 单次分类复用已编译表达式，不再逐地区重复扫描/构造组合正则。
+    const ranks = new Set();
+    for (const name of known.names) {
+      ranks.add(manualRegionRank(name));
+      if (ranks.size === REGION_KEYS.length + 1) break;
+    }
+    return {
+      unknown: false,
+      keys: REGION_KEYS.filter((key, index) => ranks.has(index)),
+      other: ranks.has(REGION_KEYS.length)
+    };
+  })();
+
+  // 欧洲与「其他地区」是多国混排的大区：这两个桶再按节点名开头的国旗做二级分组，
+  // 让同一国家的节点连在一起；其余大区本身就是单一国家，不再拆。
+  // 用代理对判断国旗（不依赖 u 标志），QuickJS / Boa 都能跑。
+  const COUNTRY_SORT_FROM = REGION_KEYS.indexOf("eu");
+  const countryKey = (name) => {
+    if (typeof name !== "string" || name.length < 4) return "";
+    if (name.charCodeAt(0) !== 0xD83C) return "";
+    const low = name.charCodeAt(1);
+    return low >= 0xDDE6 && low <= 0xDDFF ? name.slice(0, 4) : "";
+  };
+
+  // 同地区内保留订阅原顺序：机场怎么排，「全球手动」就怎么排，不再按名称重排。
+  // 唯一例外是欧洲 / 其他地区这类多国混排的桶，先按国家分组，组内再保持订阅顺序。
+
+  const getManualProxyNames = () => Array.isArray(config.proxies)
     ? config.proxies
         .filter(isProxyCandidate)
         .map((proxy) => proxy && proxy.name)
@@ -271,10 +393,21 @@ function main(config) {
             name.length > 0 &&
             !PSEUDO_NODE_RE.test(name)
         )
-        .sort((a, b) => {
-          const rankDiff = manualRegionRank(a) - manualRegionRank(b);
-          return rankDiff !== 0 ? rankDiff : naturalCompare(a, b);
+        .map((name, index) => {
+          const rank = manualRegionRank(name);
+          return {
+            name,
+            index,
+            rank,
+            country: rank >= COUNTRY_SORT_FROM ? countryKey(name) : ""
+          };
         })
+        .sort((a, b) =>
+          (a.rank - b.rank) ||
+          (a.country < b.country ? -1 : a.country > b.country ? 1 : 0) ||
+          (a.index - b.index)
+        )
+        .map((entry) => entry.name)
     : [];
 
   // ---------- 3. 工具函数 ----------
@@ -344,6 +477,21 @@ function main(config) {
     "size-limit": RULESET_SIZE_LIMIT
   });
 
+  // 自维护的小型域名补丁：domain/text 同时支持分流和 DNS rule-set 引用。
+  // 使用 Raw 地址避免 CDN 的分支缓存延迟；热修复只需修改 rules/*.list。
+  const CUSTOM_RULE_BASE =
+    "https://raw.githubusercontent.com/skullvek/Mihomo-RouteKit/main/rules/";
+  const customDomainProvider = (file) => ({
+    type: "http",
+    behavior: "domain",
+    format: "text",
+    path: `./ruleset/skull/custom-${file}`,
+    url: CUSTOM_RULE_BASE + file,
+    interval: RULE_INTERVAL,
+    proxy: RULESET_DOWNLOAD_PROXY,
+    "size-limit": RULESET_SIZE_LIMIT
+  });
+
   const ipProvider = (file) => ({
     type: "http",
     behavior: "ipcidr",
@@ -356,51 +504,76 @@ function main(config) {
   });
 
   // ---------- 4. 策略组 ----------
-  const REGION_GROUPS = [
-    "香港聚合",
-    "澳门聚合",
-    "台湾聚合",
-    "新加坡聚合",
-    "韩国聚合",
-    "日本聚合",
-    "美国聚合",
-    "欧洲聚合",
-    "其他地区"
+  // 地区描述表：顺序即主界面顺序，也是 AI / 服务组 / 国外流量 的选项来源。
+  // 只有订阅里真的存在节点的地区才进入 ACTIVE_REGIONS（判定见 2.1）。
+  const REGION_DEFS = [
+    { key: "hk", aggregate: "香港聚合", auto: "香港自动", icon: ICON.hk, filter: FILTER.hk, exclude: REGION_EXCLUDE.hk },
+    { key: "mo", aggregate: "澳门聚合", auto: "澳门自动", icon: ICON.mo, filter: FILTER.mo, exclude: REGION_EXCLUDE.mo },
+    { key: "tw", aggregate: "台湾聚合", auto: "台湾自动", icon: ICON.tw, filter: FILTER.tw, exclude: REGION_EXCLUDE.tw },
+    { key: "sg", aggregate: "新加坡聚合", auto: "新加坡自动", icon: ICON.sg, filter: FILTER.sg, exclude: REGION_EXCLUDE.sg },
+    { key: "kr", aggregate: "韩国聚合", auto: "韩国自动", icon: ICON.kr, filter: FILTER.kr, exclude: REGION_EXCLUDE.kr },
+    { key: "jp", aggregate: "日本聚合", auto: "日本自动", icon: ICON.jp, filter: FILTER.jp, exclude: REGION_EXCLUDE.jp },
+    { key: "us", aggregate: "美国聚合", auto: "美国自动", icon: ICON.us, filter: FILTER.us, exclude: REGION_EXCLUDE.us },
+    { key: "eu", aggregate: "欧洲聚合", auto: "欧洲自动", icon: ICON.eu, filter: FILTER.eu, exclude: REGION_EXCLUDE.eu },
+    { key: "other", aggregate: "其他地区", auto: "其他自动", icon: ICON.other, filter: "(?i)^.*$", exclude: OTHER_EXCLUDE }
   ];
 
-  const REGION_AUTO_GROUPS = [
-    "香港自动",
-    "澳门自动",
-    "台湾自动",
-    "新加坡自动",
-    "韩国自动",
-    "日本自动",
-    "美国自动",
-    "欧洲自动",
-    "其他自动"
-  ];
+  const regionEnabled = (region) =>
+    region.key === "other"
+      ? REGION_AVAILABILITY.other
+      : REGION_AVAILABILITY.keys.indexOf(region.key) >= 0;
+
+  const ACTIVE_REGIONS = REGION_DEFS.filter(regionEnabled);
+  const REGION_GROUPS = ACTIVE_REGIONS.map((region) => region.aggregate);
+
+  if (!REGION_AVAILABILITY.unknown) {
+    const skippedRegions = REGION_DEFS.filter((region) => !regionEnabled(region));
+    if (skippedRegions.length > 0) {
+      note(
+        `订阅里没有这些地区的节点，已跳过对应策略组：${skippedRegions.map((region) => region.aggregate).join("、")}；当前保留：${REGION_GROUPS.join("、") || "无"}`
+      );
+    }
+  }
+
+  const REGION_AUTO_GROUPS = ACTIVE_REGIONS.map((region) => region.auto);
 
   // AI 不提供 DIRECT，也不引用任何可以切到 DIRECT 的上级组。
   const AI_OPTIONS = [
-    "自动选择",
     "全球手动",
+    "自动选择",
     ...REGION_GROUPS
   ];
+  // AI 组首次默认选中「全球手动」，与 README 结构图一致；仍不提供 DIRECT。
+  const aiSelect = (name, icon) => ({
+    ...select(name, icon, AI_OPTIONS),
+    "default-selected": "全球手动"
+  });
 
   // 普通国际服务允许显式 DIRECT。
   const SERVICE_OPTIONS = [
-    "自动选择",
     "全球手动",
+    "自动选择",
     ...REGION_GROUPS,
     "DIRECT"
   ];
+  // 服务组默认选中「全球手动」，与 README 结构图一致；DIRECT 默认组显式覆盖。
+  const serviceSelect = (name, icon, defaultSelected = "全球手动") => ({
+    ...select(name, icon, SERVICE_OPTIONS),
+    "default-selected": defaultSelected
+  });
 
   // 一般国外流量只允许代理路径。
   const FOREIGN_OPTIONS = [
-    "自动选择",
     "全球手动",
+    "自动选择",
     ...REGION_GROUPS
   ];
+
+  // 「国外流量」首次默认选中「全球手动」，与 AI / 服务组保持一致；仍不提供 DIRECT。
+  const foreignSelect = (name, icon) => ({
+    ...select(name, icon, FOREIGN_OPTIONS),
+    "default-selected": "全球手动"
+  });
 
   config["proxy-groups"] = [
     // 1. 全球手动：不加入 DIRECT，避免 AI 通过上级组间接直连。
@@ -409,12 +582,8 @@ function main(config) {
       type: "select",
       icon: ICON.manual,
       "exclude-type": GROUP_EXCLUDE_TYPES,
-      // 静态节点自然排序；provider 动态节点由 use 引入，顺序由内核管理。
-      ...(manualProxyNames.length > 0
-        ? { proxies: [...manualProxyNames] }
-        : providerNames.length === 0
-          ? { proxies: ["REJECT"] }
-          : {}),
+      // 静态节点按地区分桶、同地区保留订阅原顺序；provider 动态节点由 use 引入，顺序由内核管理。
+      // proxies 在 preserveDependencies 完成节点改名/去重后一次生成。
       ...(providerNames.length > 0
         ? {
             use: providerNames,
@@ -441,52 +610,44 @@ function main(config) {
     },
 
     // 3. 一般国外流量
-    select("国外流量", ICON.foreign, FOREIGN_OPTIONS),
+    foreignSelect("国外流量", ICON.foreign),
 
     // 4. 最终无法分类的流量默认交给国外流量，但保留手动 DIRECT 兜底。
     select("漏网之鱼", ICON.final, [
       "国外流量",
-      "自动选择",
       "全球手动",
+      "自动选择",
       "DIRECT"
     ]),
 
-    // 5. AI：强制代理，无 DIRECT
-    select("ChatGPT", ICON.chatgpt, AI_OPTIONS),
-    select("Claude", ICON.claude, AI_OPTIONS),
-    select("Gemini / NotebookLM", ICON.gemini, AI_OPTIONS),
+    // 5. AI：强制代理，无 DIRECT；首次默认「全球手动」
+    aiSelect("ChatGPT", ICON.chatgpt),
+    aiSelect("Claude", ICON.claude),
+    aiSelect("Gemini / NotebookLM", ICON.gemini),
 
     // 6. 常用国际服务
-    select("Google", ICON.google, SERVICE_OPTIONS),
-    select("GitHub", ICON.github, SERVICE_OPTIONS),
-    select("Microsoft", ICON.microsoft, SERVICE_OPTIONS),
-    select("Apple", ICON.apple, SERVICE_OPTIONS),
-    select("Telegram", ICON.telegram, SERVICE_OPTIONS),
-    select("X", ICON.x, SERVICE_OPTIONS),
-    select("YouTube", ICON.youtube, SERVICE_OPTIONS),
-    select("Netflix", ICON.netflix, SERVICE_OPTIONS),
+    serviceSelect("Google", ICON.google),
+    serviceSelect("GitHub", ICON.github),
+    serviceSelect("X", ICON.x),
+    serviceSelect("YouTube", ICON.youtube),
+    serviceSelect("流媒体", ICON.media),
+    serviceSelect("Telegram", ICON.telegram),
+    serviceSelect("WhatsApp", ICON.whatsapp),
+    // Microsoft / Apple / 游戏平台首次默认 DIRECT，其余七个服务组默认「全球手动」。
+    serviceSelect("Microsoft", ICON.microsoft, "DIRECT"),
+    serviceSelect("Apple", ICON.apple, "DIRECT"),
+    serviceSelect("游戏平台", ICON.games, "DIRECT"),
 
-    // 7. 地区聚合：自动测速 + 本地区全部节点
-    regionAggregate("香港聚合", "香港自动", ICON.hk, FILTER.hk, REGION_EXCLUDE.hk),
-    regionAggregate("澳门聚合", "澳门自动", ICON.mo, FILTER.mo, REGION_EXCLUDE.mo),
-    regionAggregate("台湾聚合", "台湾自动", ICON.tw, FILTER.tw, REGION_EXCLUDE.tw),
-    regionAggregate("新加坡聚合", "新加坡自动", ICON.sg, FILTER.sg, REGION_EXCLUDE.sg),
-    regionAggregate("韩国聚合", "韩国自动", ICON.kr, FILTER.kr, REGION_EXCLUDE.kr),
-    regionAggregate("日本聚合", "日本自动", ICON.jp, FILTER.jp, REGION_EXCLUDE.jp),
-    regionAggregate("美国聚合", "美国自动", ICON.us, FILTER.us, REGION_EXCLUDE.us),
-    regionAggregate("欧洲聚合", "欧洲自动", ICON.eu, FILTER.eu, REGION_EXCLUDE.eu),
-    regionAggregate("其他地区", "其他自动", ICON.other, "(?i)^.*$", OTHER_EXCLUDE),
+    // 4. 地区聚合：聚合组 = 地区自动测速 + 该地区全部节点
+    //    只有订阅里存在节点的地区才建组，空地区不再占用主界面。
+    ...ACTIVE_REGIONS.map((region) =>
+      regionAggregate(region.aggregate, region.auto, region.icon, region.filter, region.exclude)
+    ),
 
-    // 8. 隐藏地区自动测速子组
-    regionAuto("香港自动", ICON.hk, FILTER.hk, REGION_EXCLUDE.hk),
-    regionAuto("澳门自动", ICON.mo, FILTER.mo, REGION_EXCLUDE.mo),
-    regionAuto("台湾自动", ICON.tw, FILTER.tw, REGION_EXCLUDE.tw),
-    regionAuto("新加坡自动", ICON.sg, FILTER.sg, REGION_EXCLUDE.sg),
-    regionAuto("韩国自动", ICON.kr, FILTER.kr, REGION_EXCLUDE.kr),
-    regionAuto("日本自动", ICON.jp, FILTER.jp, REGION_EXCLUDE.jp),
-    regionAuto("美国自动", ICON.us, FILTER.us, REGION_EXCLUDE.us),
-    regionAuto("欧洲自动", ICON.eu, FILTER.eu, REGION_EXCLUDE.eu),
-    regionAuto("其他自动", ICON.other, "(?i)^.*$", OTHER_EXCLUDE)
+    // 5. 地区自动测速子组
+    ...ACTIVE_REGIONS.map((region) =>
+      regionAuto(region.auto, region.icon, region.filter, region.exclude)
+    )
   ];
 
   // 即使服务组关闭，其名称仍保留给脚本，避免与订阅节点或旧依赖组混淆。
@@ -506,7 +667,9 @@ function main(config) {
     "Telegram",
     "X",
     "YouTube",
-    "Netflix"
+    "流媒体",
+    "WhatsApp",
+    "游戏平台"
   ];
 
   const disabledGroupNames = Object.create(null);
@@ -543,6 +706,10 @@ function main(config) {
 
   // ---------- 5. Rule Providers ----------
   const customRuleProviders = {
+    SKULL_CustomDirect: customDomainProvider("direct.list"),
+    SKULL_CustomProxy: customDomainProvider("proxy.list"),
+    SKULL_FakeIPFilter: customDomainProvider("fake-ip-filter.list"),
+
     SKULL_Lan: domainProvider("private.mrs"),
     SKULL_China: domainProvider("cn.mrs"),
     SKULL_Foreign: domainProvider("geolocation-!cn.mrs"),
@@ -558,14 +725,30 @@ function main(config) {
     SKULL_AppleCN: domainProvider("apple@cn.mrs"),
     SKULL_Apple: domainProvider("apple.mrs"),
     SKULL_Telegram: domainProvider("telegram.mrs"),
+    SKULL_WhatsApp: domainProvider("whatsapp.mrs"),
     SKULL_X: domainProvider("x.mrs"),
     SKULL_YouTube: domainProvider("youtube.mrs"),
     SKULL_Netflix: domainProvider("netflix.mrs"),
+    SKULL_Disney: domainProvider("disney.mrs"),
+    SKULL_PrimeVideo: domainProvider("primevideo.mrs"),
+    SKULL_HBO: domainProvider("hbo.mrs"),
+    SKULL_Spotify: domainProvider("spotify.mrs"),
+    SKULL_TikTok: domainProvider("tiktok.mrs"),
+    SKULL_GamesCN: domainProvider("category-games@cn.mrs"),
+    SKULL_GamesDownloadCN: domainProvider("category-game-platforms-download@cn.mrs"),
+    SKULL_Steam: domainProvider("steam.mrs"),
+    SKULL_Epic: domainProvider("epicgames.mrs"),
+    SKULL_BattleNet: domainProvider("blizzard.mrs"),
+    SKULL_EA: domainProvider("ea.mrs"),
+    SKULL_Ubisoft: domainProvider("ubisoft.mrs"),
+    SKULL_Riot: domainProvider("riot.mrs"),
+    SKULL_Xbox: domainProvider("xbox.mrs"),
 
     SKULL_LanIP: ipProvider("private.mrs"),
     SKULL_ChinaIP: ipProvider("cn.mrs"),
     SKULL_GoogleIP: ipProvider("google.mrs"),
     SKULL_TelegramIP: ipProvider("telegram.mrs"),
+    SKULL_MetaIP: ipProvider("facebook.mrs"),
     SKULL_XIP: ipProvider("twitter.mrs"),
     SKULL_NetflixIP: ipProvider("netflix.mrs")
   };
@@ -581,21 +764,54 @@ function main(config) {
     const reservedNames = new Set(reservedGroupNames);
     const newNames = new Set(activeGroupNames);
     const builtins = new Set(["DIRECT", "REJECT", "REJECT-DROP", "PASS", "COMPATIBLE", "GLOBAL"]);
+    // 订阅里没有的地区组（以及 Bettbox 关闭「地区分组」后）不会出现在新配置里：
+    // 旧配置对它们的引用必须改指「国外流量」，否则内核会因悬空引用拒绝整份配置。
+    const missingRegionNames = new Set();
+    for (const region of REGION_DEFS) {
+      if (!newNames.has(region.aggregate)) missingRegionNames.add(region.aggregate);
+      if (!newNames.has(region.auto)) missingRegionNames.add(region.auto);
+    }
+    // 别名避开全部原名，包括尚未访问的旧组与已关闭的服务组。
+    const originalProxies = Array.isArray(config.proxies) ? config.proxies : [];
+    const used = new Set([
+      ...reservedNames, ...builtins, ...providerNames,
+      ...originalProxies.map((proxy) => proxy && proxy.name),
+      ...oldGroups.map((group) => group && group.name)
+    ]);
+    const uniqueAlias = (base) => {
+      let alias = base;
+      while (used.has(alias)) alias = `_${alias}`;
+      used.add(alias);
+      return alias;
+    };
+    const nodeAliases = new Map();
+    const seenNodes = new Set();
     const nodes = new Map();
-    for (const proxy of config.proxies || []) {
+    for (let proxy of originalProxies) {
       if (!proxy || typeof proxy.name !== "string") continue;
-      if (nodes.has(proxy.name)) {
+      if (seenNodes.has(proxy.name)) {
         report(`订阅中存在重复节点名「${proxy.name}」，已跳过重复项`);
         continue;
       }
-      if (reservedNames.has(proxy.name) || builtins.has(proxy.name)) {
+      seenNodes.add(proxy.name);
+      if (newNames.has(proxy.name) || builtins.has(proxy.name)) {
+        const originalName = proxy.name;
+        const alias = uniqueAlias(`__SKULL_NODE__${originalName}`);
+        nodeAliases.set(originalName, alias);
+        proxy = { ...proxy, name: alias };
         report(
-          `节点名「${proxy.name}」与内置策略或脚本策略组重名，已跳过该节点的依赖重写，建议在订阅端改名`
+          `节点名「${originalName}」与内置策略或脚本策略组重名，已重命名为「${alias}」`
         );
-        continue;
       }
       nodes.set(proxy.name, proxy);
     }
+    if (Array.isArray(config.proxies)) config.proxies = [...nodes.values()];
+    // 节点名称规范化后再生成手动列表，避免重复过滤、地区识别和排序。
+    const manualGroup = config["proxy-groups"][0];
+    const names = getManualProxyNames();
+    if (names.length > 0) manualGroup.proxies = names;
+    else if (providerCount === 0) manualGroup.proxies = ["REJECT"];
+    else delete manualGroup.proxies;
     const old = new Map();
     // 旧组原名 -> 因与节点重名而改用的别名，供 resolve 与 default-selected 转换。
     const preAlias = new Map();
@@ -606,13 +822,17 @@ function main(config) {
         report(`原配置中存在重复策略组「${group.name}」，已跳过重复项`);
         continue;
       }
+      if (missingRegionNames.has(group.name)) {
+        report(`原配置策略组「${group.name}」属于已跳过的地区，未保留`);
+        continue;
+      }
       if (builtins.has(group.name)) {
         report(`原配置策略组「${group.name}」与内置策略重名，已跳过`);
         continue;
       }
       if (nodes.has(group.name)) {
         // 旧组与订阅节点重名时无法按原名保留，改用稳定别名并隐藏，避免整套脚本失效。
-        const alias = `__SKULL_OLD__${group.name}`;
+        const alias = uniqueAlias(`__SKULL_OLD__${group.name}`);
         preAlias.set(group.name, alias);
         old.set(alias, { ...group, name: alias, hidden: true });
         report(
@@ -622,10 +842,9 @@ function main(config) {
       }
       old.set(group.name, group);
     }
-    const used = new Set([...reservedNames, ...nodes.keys(), ...old.keys(), ...providerNames]);
     const renamed = new Map();
+    const droppedReported = new Set();
     const aliases = new Set();
-    const visiting = new Set();
     const retained = [];
     const unresolvedDynamicRefs = new Set();
 
@@ -633,42 +852,50 @@ function main(config) {
       if (typeof name !== "string" || !name || builtins.has(name)) return name;
       // 旧组因与节点重名已被改名，引用需要先映射到别名。
       if (preAlias.has(name)) name = preAlias.get(name);
-      if (visiting.has(name)) {
-        report(`代理依赖存在循环：${name}，已切断该引用`);
-        return "REJECT";
+      // 仅转换原配置引用；自建规则集下载策略在下方独立保留。
+      if (!old.has(name) && nodeAliases.has(name)) name = nodeAliases.get(name);
+      // 已跳过的地区组不存在了：旧引用改指「国外流量」，避免落到 REJECT 断流。
+      if (missingRegionNames.has(name)) {
+        if (!droppedReported.has(name)) {
+          droppedReported.add(name);
+          report(`原配置引用了当前订阅没有节点的地区组「${name}」，已改指「国外流量」`);
+        }
+        return "国外流量";
       }
       if (renamed.has(name)) return renamed.get(name);
       if (aliases.has(name)) return name;
       if (old.has(name)) {
-        visiting.add(name);
         let alias = name;
         if (reservedNames.has(name)) {
-          alias = `__SKULL_DEP__${name}`;
-          while (used.has(alias)) alias = `_${alias}`;
+          alias = uniqueAlias(`__SKULL_DEP__${name}`);
         }
         used.add(alias);
         const copy = { ...old.get(name), name: alias, hidden: true };
+        // 先登记别名，引用保留与执行图判环分开，default-selected 只是偏好。
+        renamed.set(name, alias);
+        aliases.add(alias);
+        // use 必须是 provider 名称数组；畸形字段不能原样交给内核。
+        if (copy.use !== undefined && (!Array.isArray(copy.use) ||
+            copy.use.some((ref) => typeof ref !== "string" || !providerNames.includes(ref)))) {
+          report(`策略组「${alias}」的 use 非法，已规范化并在空组时回落 REJECT`);
+          copy.use = asArray(copy.use).filter((ref) => typeof ref === "string" && providerNames.includes(ref));
+          if (!copy.use.length) delete copy.use;
+          if (!asArray(copy.proxies).length && !asArray(copy.use).length &&
+              !copy["include-all"] && !copy["include-all-proxies"] && (!copy["include-all-providers"] || providerCount === 0)) {
+            copy.proxies = ["REJECT"];
+            copy["empty-fallback"] = "REJECT";
+          }
+        }
         if (Array.isArray(copy.proxies)) copy.proxies = copy.proxies.map(resolve);
         // default-selected 失效时由内核回退；只改写实际指向旧组的默认项。
         const defaultSelected = copy["default-selected"];
-        if (typeof defaultSelected === "string" && preAlias.has(defaultSelected)) {
-          copy["default-selected"] = preAlias.get(defaultSelected);
-        } else if (old.has(defaultSelected)) {
+        if (preAlias.has(defaultSelected) || old.has(defaultSelected) || nodeAliases.has(defaultSelected) || missingRegionNames.has(defaultSelected)) {
           copy["default-selected"] = resolve(defaultSelected);
         }
-        visiting.delete(name);
-        renamed.set(name, alias);
-        aliases.add(alias);
         retained.push(copy);
         return alias;
       }
-      if (nodes.has(name)) {
-        visiting.add(name);
-        const proxy = nodes.get(name);
-        if (proxy["dialer-proxy"]) proxy["dialer-proxy"] = resolve(proxy["dialer-proxy"]);
-        visiting.delete(name);
-        return name;
-      }
+      if (nodes.has(name)) return name;
       // 仅实际仍存在的脚本策略组可以直接放行。
       if (newNames.has(name)) return name;
 
@@ -701,25 +928,112 @@ function main(config) {
       const provider = providers[name];
       if (!provider || typeof provider !== "object") continue;
       rewrite(provider, "proxy");
+      rewrite(provider, "dialer-proxy");
       rewrite(provider.override, "dialer-proxy");
-      for (const proxy of provider.payload || []) rewrite(proxy, "dialer-proxy");
+      for (const proxy of asArray(provider.payload)) rewrite(proxy, "dialer-proxy");
     }
-    for (const provider of Object.values(config["rule-providers"])) rewrite(provider, "proxy");
-    for (const listener of config.listeners || []) rewrite(listener, "proxy");
-    for (const tunnel of config.tunnels || []) rewrite(tunnel, "proxy");
+    for (const [name, provider] of Object.entries(config["rule-providers"])) {
+      if (!Object.prototype.hasOwnProperty.call(customRuleProviders, name)) rewrite(provider, "proxy");
+    }
+    for (const listener of asArray(config.listeners)) rewrite(listener, "proxy");
+    for (const tunnel of asArray(config.tunnels)) rewrite(tunnel, "proxy");
     // 内核 RawNTP 里用于指定出站代理的字段名是 "dialer-proxy"，不存在 "ntp.proxy"。
     // 原脚本写成 "proxy" 导致这段检查从未生效，而真正需要保护的 dialer-proxy 反而不在范围内。
     rewrite(config.ntp, "dialer-proxy");
     config["proxy-groups"].push(...retained);
+
+    // 原始组引用参与内核拓扑排序，即便排除表达式未知，也必须切断纯组环。
+    // 节点 dialer 不参与此步骤；不能把被排除的节点误当成执行边。
+    const groups = new Map(config["proxy-groups"].map((group) => [group.name, group]));
+    const visitingGroups = new Set();
+    const visitedGroups = new Set();
+    const checkGroup = (group) => {
+      if (visitedGroups.has(group.name)) return;
+      visitingGroups.add(group.name);
+      group.proxies = asArray(group.proxies).map((ref) => {
+        if (!groups.has(ref)) return ref;
+        if (visitingGroups.has(ref)) {
+          report(`策略组「${group.name}」存在纯组循环，已将引用「${ref}」替换为 REJECT`);
+          return "REJECT";
+        }
+        checkGroup(groups.get(ref));
+        return ref;
+      });
+      if (!group.proxies.length) delete group.proxies;
+      visitingGroups.delete(group.name);
+      visitedGroups.add(group.name);
+    };
+    for (const group of groups.values()) checkGroup(group);
+    const matches = (proxy, options, explicit = false) =>
+      memberStatus(proxy, options, true, explicit, newNames.has(options.name)) === true;
+    const visibleNodes = new Map([...nodes].map(([name, proxy]) => [name, { proxy, owner: proxy }]));
+    for (const name of providerNames) {
+      const provider = providers[name];
+      if (!provider || !Array.isArray(provider.payload)) continue;
+      const override = provider.override || {};
+      if ([override["proxy-name"], override["override-expr"]].some(
+        (value) => value !== undefined && (!Array.isArray(value) || value.length > 0)
+      )) continue;
+      for (const proxy of provider.payload) {
+        if (!proxy || typeof proxy.name !== "string" || memberStatus(proxy, provider) !== true) continue;
+        const effective = { ...proxy, name: `${override["additional-prefix"] || ""}${proxy.name}${override["additional-suffix"] || ""}` };
+        const owner = typeof override["dialer-proxy"] === "string" ? override
+          : provider["dialer-proxy"] ? provider : proxy;
+        visibleNodes.set({}, { proxy: effective, owner, providerName: name });
+      }
+    }
+    // 引用修复与纯组拓扑检查已完成。只有有效节点存在 dialer 时才需要执行图；
+    // guard 使用最终 owner（包含 provider/override），不遗漏链式拨号或改变告警。
+    let hasNodeDialer = false;
+    for (const { owner } of visibleNodes.values()) {
+      if (owner["dialer-proxy"]) {
+        hasNodeDialer = true;
+        break;
+      }
+    }
+    if (!hasNodeDialer) return;
+    const groupMembers = new Map();
+    for (const group of groups.values()) {
+      // 显式成员只应用 excludes/type，group.filter 只影响自动加入的成员。
+      const members = asArray(group.proxies).filter((name) => {
+        const proxy = nodes.get(name) || groups.get(name) || { name, type: builtins.has(name) ? name : "" };
+        return matches(proxy, group, true);
+      });
+      for (const [id, entry] of visibleNodes) {
+        const included = entry.providerName
+          ? group["include-all"] || group["include-all-providers"] || asArray(group.use).includes(entry.providerName)
+          : group["include-all"] || group["include-all-proxies"];
+        if (included && matches(entry.proxy, group)) members.push(id);
+      }
+      groupMembers.set(group.name, members);
+    }
+    const reaches = (name, target, seen = new Set()) => {
+      if (name === target) return true;
+      if (!name || builtins.has(name) || seen.has(name)) return false;
+      seen.add(name);
+      if (visibleNodes.has(name)) return reaches(visibleNodes.get(name).owner["dialer-proxy"], target, seen);
+      return (groupMembers.get(name) || []).some((member) => reaches(member, target, seen));
+    };
+    for (const [id, { proxy, owner }] of visibleNodes) {
+      if (owner["dialer-proxy"] && reaches(owner["dialer-proxy"], id)) {
+        report(`节点「${proxy.name}」经「${owner["dialer-proxy"]}」形成循环，已将 dialer-proxy 替换为 REJECT`);
+        owner["dialer-proxy"] = "REJECT";
+      }
+    }
   };
   preserveDependencies();
 
   // ---------- 6. 分流规则 ----------
-  // 优先级：LAN → AI → 特殊国际服务 → 中国域名 → 一般国外域名 → IP → MATCH
+  // 优先级：LAN → AI → NTP 校时直连 → 自定义直连/代理补丁 → 特殊国际服务 → 中国域名 → 国外域名 → IP → MATCH
   // NotebookLM / Gemini 必须早于通用 Google。
   config.rules = [
     // LAN
     "RULE-SET,SKULL_Lan,DIRECT",
+
+    // WhatsApp 进程级接管：桌面端（find-process-mode: strict）连 P2P UDP 一起进组；
+    // Android 客户端不匹配进程，由后面的 whatsapp 域名与 Meta 网段规则覆盖。
+    `PROCESS-NAME,WhatsApp.exe,${serviceTarget("WhatsApp")}`,
+    `PROCESS-NAME,WhatsApp,${serviceTarget("WhatsApp")}`,
 
     // AI
     `DOMAIN-SUFFIX,notebooklm.google,${serviceTarget("Gemini / NotebookLM")}`,
@@ -732,9 +1046,30 @@ function main(config) {
     `RULE-SET,SKULL_Claude,${serviceTarget("Claude")}`,
     `RULE-SET,SKULL_Gemini,${serviceTarget("Gemini / NotebookLM")}`,
 
+    // OPPO 等系统应用共用 NTP 校时；Fake-IP 排除只返回真实 IP，不决定出口。
+    // 域名规则覆盖 pool 及其子域名；仅 UDP/123 直连，兼容其他校时服务器与 IP 请求。
+    "DOMAIN-SUFFIX,pool.ntp.org,DIRECT",
+    "AND,((NETWORK,UDP),(DST-PORT,123)),DIRECT",
+
+    // LAN / AI 保护规则先匹配；补丁可纠正其后的服务与国内外通用分类。
+    "RULE-SET,SKULL_CustomDirect,DIRECT",
+    "RULE-SET,SKULL_CustomProxy,国外流量",
+
     // 中国区 Apple / Microsoft 优先直连，不受对应服务组开关影响。
     "RULE-SET,SKULL_AppleCN,DIRECT",
     "RULE-SET,SKULL_MicrosoftCN,DIRECT",
+    // 国内游戏平台与下载 CDN 优先直连。
+    "RULE-SET,SKULL_GamesCN,DIRECT",
+    "RULE-SET,SKULL_GamesDownloadCN,DIRECT",
+
+    // 游戏平台先于通用服务匹配，Xbox 等流量由独立策略组控制。
+    `RULE-SET,SKULL_Steam,${serviceTarget("游戏平台")}`,
+    `RULE-SET,SKULL_Epic,${serviceTarget("游戏平台")}`,
+    `RULE-SET,SKULL_BattleNet,${serviceTarget("游戏平台")}`,
+    `RULE-SET,SKULL_EA,${serviceTarget("游戏平台")}`,
+    `RULE-SET,SKULL_Ubisoft,${serviceTarget("游戏平台")}`,
+    `RULE-SET,SKULL_Riot,${serviceTarget("游戏平台")}`,
+    `RULE-SET,SKULL_Xbox,${serviceTarget("游戏平台")}`,
 
     // 常用国际服务
     `RULE-SET,SKULL_YouTube,${serviceTarget("YouTube")}`,
@@ -743,8 +1078,14 @@ function main(config) {
     `RULE-SET,SKULL_Microsoft,${serviceTarget("Microsoft")}`,
     `RULE-SET,SKULL_Apple,${serviceTarget("Apple")}`,
     `RULE-SET,SKULL_Telegram,${serviceTarget("Telegram")}`,
+    `RULE-SET,SKULL_WhatsApp,${serviceTarget("WhatsApp")}`,
     `RULE-SET,SKULL_X,${serviceTarget("X")}`,
-    `RULE-SET,SKULL_Netflix,${serviceTarget("Netflix")}`,
+    `RULE-SET,SKULL_Netflix,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_Disney,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_PrimeVideo,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_HBO,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_Spotify,${serviceTarget("流媒体")}`,
+    `RULE-SET,SKULL_TikTok,${serviceTarget("流媒体")}`,
 
     // 中国大陆域名
     "RULE-SET,SKULL_China,DIRECT",
@@ -757,7 +1098,8 @@ function main(config) {
     `RULE-SET,SKULL_GoogleIP,${serviceTarget("Google")},no-resolve`,
     `RULE-SET,SKULL_TelegramIP,${serviceTarget("Telegram")},no-resolve`,
     `RULE-SET,SKULL_XIP,${serviceTarget("X")},no-resolve`,
-    `RULE-SET,SKULL_NetflixIP,${serviceTarget("Netflix")},no-resolve`,
+    `RULE-SET,SKULL_NetflixIP,${serviceTarget("流媒体")},no-resolve`,
+    `RULE-SET,SKULL_MetaIP,${serviceTarget("WhatsApp")},no-resolve`,
 
     // 中国 IP 作为未知域名的最终国内兜底
     "RULE-SET,SKULL_ChinaIP,DIRECT",
@@ -781,6 +1123,14 @@ function main(config) {
     config.dns && typeof config.dns === "object" && !Array.isArray(config.dns)
       ? config.dns
       : {};
+  const oldFilterMode = oldDns["fake-ip-filter-mode"];
+  const compatibleFilter = oldFilterMode == null || oldFilterMode === "blacklist";
+  const inheritedFilter = compatibleFilter && Array.isArray(oldDns["fake-ip-filter"])
+    ? oldDns["fake-ip-filter"]
+    : [];
+  if (!compatibleFilter && Array.isArray(oldDns["fake-ip-filter"]) && oldDns["fake-ip-filter"].length > 0) {
+    report(`原 DNS fake-ip-filter 使用「${oldFilterMode}」模式，与脚本 blacklist 不兼容；已使用脚本基础排除项`);
+  }
 
   const DOMESTIC_DNS = [
     "https://dns.alidns.com/dns-query#DIRECT",
@@ -802,11 +1152,12 @@ function main(config) {
     "fake-ip-range": "198.18.0.1/16",
     "fake-ip-filter-mode": "blacklist",
 
-    // 只继承订阅已有的 fake-ip-filter；不继承 nameserver / fallback /
+    // 只继承 blacklist 模式的 fake-ip-filter；不继承 nameserver / fallback /
     // fallback-filter / nameserver-policy 等可能改变查询路径的 DNS 字段。
     "fake-ip-filter": [
       ...new Set([
-        ...(Array.isArray(oldDns["fake-ip-filter"]) ? oldDns["fake-ip-filter"] : []),
+        "rule-set:SKULL_FakeIPFilter",
+        ...inheritedFilter,
         "*.lan",
         "*.local",
         "localhost.ptlogin2.qq.com",
@@ -838,9 +1189,15 @@ function main(config) {
 
       // LAN / 私有域名使用 Android 系统 DNS；国内公网域名继续使用国内 DoH。
       "rule-set:SKULL_Lan": [...LAN_DNS],
+      // 校时使用国内解析，避免境外 DoH 为 pool.ntp.org 选择远端服务器。
+      "+.pool.ntp.org": [...DOMESTIC_DNS],
+      "rule-set:SKULL_CustomDirect": [...DOMESTIC_DNS],
+      "rule-set:SKULL_CustomProxy": proxyDns("国外流量"),
       "rule-set:SKULL_China": [...DOMESTIC_DNS],
       "rule-set:SKULL_AppleCN": [...DOMESTIC_DNS],
-      "rule-set:SKULL_MicrosoftCN": [...DOMESTIC_DNS]
+      "rule-set:SKULL_MicrosoftCN": [...DOMESTIC_DNS],
+      "rule-set:SKULL_GamesCN": [...DOMESTIC_DNS],
+      "rule-set:SKULL_GamesDownloadCN": [...DOMESTIC_DNS]
     },
 
     // DIRECT 出口默认仍使用国内 DoH；开启 follow-policy 后，LAN 等明确策略可覆盖它。
@@ -869,8 +1226,12 @@ function main(config) {
   config["tcp-concurrent"] = true;
   config["find-process-mode"] = "off";
 
+  const oldProfile =
+    config.profile && typeof config.profile === "object" && !Array.isArray(config.profile)
+      ? config.profile
+      : {};
   config.profile = {
-    ...(config.profile || {}),
+    ...oldProfile,
     "store-selected": true,
     "store-fake-ip": true
   };

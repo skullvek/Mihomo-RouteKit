@@ -1,0 +1,53 @@
+# Domain/text: +.domain matches the apex and all subdomains; bare names are exact.
+# International service exceptions before CN/Foreign classification.
+# LAN and protected AI routes still win; direct.list wins on conflicts.
+
+# AI and developer tools (keep their domestic editions on normal routing).
++.workbuddy.ai
++.codebuddy.ai
++.qoder.com
++.qoder.sh
++.qwen.ai
++.qwenlm.ai
++.qwenlm.io
++.z.ai
++.minimax.io
++.moonshot.ai
+
+# TRAE international: do not proxy the shared mchost.guru parent domain.
++.trae.ai
++.traeapi.us
+trae-api-sg.mchost.guru
+
+# Coze international website and its separately classified CDN.
++.coze.com
++.cozecdn.com
+
+# International office and collaboration services.
++.larksuite.com
++.larksuitecdn.com
++.larkoffice.com
++.wps.com
++.wpsoffice.com
++.voovmeeting.com
+
+# Overseas creative/media services.
+# Kling CN/global pages on the same hostname share this route.
++.klingai.com
++.wetv.vip
++.iq.com
++.bilibili.tv
++.joox.com
+
+# Overseas media/storage domains that also appear in the CN dataset.
++.tiktokrow-cdn.com
++.pikpakdrive.com
++.pikpak.me
+
+# International cloud websites; never proxy shared cloud API/CDN parents.
++.alibabacloud.com
++.tencentcloud.com
+dashscope-intl.aliyuncs.com
+dashscope-us.aliyuncs.com
++.ap-southeast-1.maas.aliyuncs.com
++.ap-northeast-1.maas.aliyuncs.com
