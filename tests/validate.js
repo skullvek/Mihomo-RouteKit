@@ -72,7 +72,10 @@ for (const file of SCRIPTS) {
     assert.deepEqual(regionNames, ['香港聚合', '美国聚合']);
     for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', 'Google', 'GitHub', 'Microsoft', 'Apple', 'Telegram', 'X', 'YouTube', '流媒体', 'WhatsApp', '游戏平台', '国外流量']) {
       const options = c['proxy-groups'].find(g => g.name === name).proxies;
-      assert.deepEqual(options.filter(option => /聚合$|^其他地区$/.test(option)), ['香港聚合', '美国聚合'], name);
+      assert.deepEqual(options, [
+        '全球手动', '自动选择', '香港聚合', '美国聚合',
+        ...(['ChatGPT', 'Claude', 'Gemini / NotebookLM', '国外流量'].includes(name) ? [] : ['DIRECT'])
+      ], name);
     }
     for (const name of ['ChatGPT', 'Claude', 'Gemini / NotebookLM', '国外流量']) {
       assert.ok(!c['proxy-groups'].find(g => g.name === name).proxies.includes('DIRECT'), name);
@@ -91,7 +94,7 @@ for (const file of SCRIPTS) {
     assert.ok(c.rules.includes('RULE-SET,SKULL_MetaIP,WhatsApp,no-resolve'));
     assert.ok(c.rules.indexOf('PROCESS-NAME,WhatsApp.exe,WhatsApp') < c.rules.indexOf('RULE-SET,SKULL_OpenAI,ChatGPT'), 'process rule must precede service rules');
     assert.equal(c.rules.filter(rule => rule.endsWith(',流媒体') || rule === 'RULE-SET,SKULL_NetflixIP,流媒体,no-resolve').length, 7);
-    assert.equal(c['proxy-groups'].find(g => g.name === '漏网之鱼').proxies[0], '国外流量');
+    assert.deepEqual(c['proxy-groups'].find(g => g.name === '漏网之鱼').proxies, ['国外流量', '全球手动', '自动选择', 'DIRECT']);
     assert.ok(c.rules.includes('RULE-SET,SKULL_ChinaIP,DIRECT'));
     assert.equal(c.rules.at(-1), 'MATCH,漏网之鱼');
     assert.ok(c.dns.nameserver.every(url => url.endsWith('#国外流量')));
