@@ -40,7 +40,7 @@ var serviceConfigs = [
 ];
 
 // Bettbox Android 全局覆写脚本
-// Version: 2026.11.06-r3
+// Version: 2026.11.08-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：设置 -> 高级设置 -> 脚本；配置 -> 订阅 -> 覆写 -> 脚本。
 
@@ -539,8 +539,8 @@ function main(config) {
 
   // AI 不提供 DIRECT，也不引用任何可以切到 DIRECT 的上级组。
   const AI_OPTIONS = [
-    "自动选择",
     "全球手动",
+    "自动选择",
     ...REGION_GROUPS
   ];
   // AI 组首次默认选中「全球手动」，与 README 结构图一致；仍不提供 DIRECT。
@@ -551,8 +551,8 @@ function main(config) {
 
   // 普通国际服务允许显式 DIRECT。
   const SERVICE_OPTIONS = [
-    "自动选择",
     "全球手动",
+    "自动选择",
     ...REGION_GROUPS,
     "DIRECT"
   ];
@@ -564,8 +564,8 @@ function main(config) {
 
   // 一般国外流量只允许代理路径。
   const FOREIGN_OPTIONS = [
-    "自动选择",
     "全球手动",
+    "自动选择",
     ...REGION_GROUPS
   ];
 
@@ -615,8 +615,8 @@ function main(config) {
     // 4. 最终无法分类的流量默认交给国外流量，但保留手动 DIRECT 兜底。
     select("漏网之鱼", ICON.final, [
       "国外流量",
-      "自动选择",
       "全球手动",
+      "自动选择",
       "DIRECT"
     ]),
 

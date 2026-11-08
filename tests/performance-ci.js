@@ -49,8 +49,20 @@ const workloads = [
   {label: 'inline-1000', input: largeInput(1000, true)},
   {label: 'dialer-1000', input: largeInput(1000, false, true)}
 ];
+// Intentional 2026.11.08-r1 delta: apply ONLY the four literal option-pair swaps
+// to the historical source. Compare every output field and diagnostic as before;
+// do not normalize/sort outputs (that could hide unrelated membership changes).
+function expectedOptionOrder(source) {
+  let swaps = 0;
+  const expected = source.replace(/^( +)"自动选择",(\r?\n)\1"全球手动",/gm, (_, indent, newline) => {
+    swaps += 1;
+    return `${indent}"全球手动",${newline}${indent}"自动选择",`;
+  });
+  assert.equal(swaps, 4, 'historical baseline must have exactly four option-pair swaps');
+  return expected;
+}
 const sources = new Map(SCRIPTS.map(file => [file, {
-  before: execFileSync('git', ['show', `${BASELINE}:${file}`], {cwd: ROOT, encoding: 'utf8'}),
+  before: expectedOptionOrder(execFileSync('git', ['show', `${BASELINE}:${file}`], {cwd: ROOT, encoding: 'utf8'})),
   after: fs.readFileSync(path.join(ROOT, file), 'utf8')
 }]));
 

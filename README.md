@@ -55,11 +55,11 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.06-r3` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.11.06-r3` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.11.06-r3` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.08-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.11.08-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.11.08-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
-> 三版脚本顶部版本标识当前统一为 `2026.11.06-r3`，并非每次补丁提交都修改版本标识。
+> 三版脚本顶部版本标识当前统一为 `2026.11.08-r1`，并非每次补丁提交都修改版本标识。
 >
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -222,6 +222,8 @@ flowchart TD
 | `国外流量` | `select` | 一般国外流量的统一出口，只允许代理路径；首次默认选中 `全球手动` |
 | `漏网之鱼` | `select` | 最终 `MATCH` 落点，默认首选 `国外流量`，同时保留手动 `DIRECT` 兜底 |
 
+各策略组内部统一先列 `全球手动`、再列 `自动选择`，其余选项位置和默认选择保持不变；`漏网之鱼` 仍以 `国外流量` 为第一项，其后是 `全球手动`、`自动选择`、`DIRECT`。这不改变主策略组的显示顺序。
+
 国内流量不经过额外的“国内直连”策略组：命中相关规则后直接落到 `DIRECT`。
 
 ### AI 组（3 个）
@@ -233,8 +235,8 @@ flowchart TD
 AI 组选项仅包含：
 
 ```text
-自动选择
 全球手动
+自动选择
 各地区聚合组
 ```
 
@@ -249,7 +251,7 @@ AI 组选项仅包含：
 这些服务组允许：
 
 ```text
-自动选择 / 全球手动 / 各地区聚合组 / DIRECT
+全球手动 / 自动选择 / 各地区聚合组 / DIRECT
 ```
 
 `Google` / `GitHub` / `X` / `YouTube` / `流媒体` / `Telegram` / `WhatsApp` 通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` 与 `Apple` 通过 `default-selected: DIRECT` 首次默认选中 `DIRECT`。
@@ -258,7 +260,7 @@ AI 组选项仅包含：
 
 ### 游戏平台（三版均支持）
 
-`游戏平台` 组覆盖 Steam、Epic Games、Battle.net（Blizzard）、EA、Ubisoft、Riot 和 Xbox 的域名规则。选项依次是自动选择、全球手动、各地区聚合组、`DIRECT`；通过 `default-selected: DIRECT` 保持首次使用默认直连。Clash Verge Rev / Bettbox 通过 `profile.store-selected` 保留已有选择；FlClash 由客户端自身保存并恢复。Bettbox 可单独关闭「游戏平台」开关，相关国际游戏规则会回落到 `国外流量`。
+`游戏平台` 组覆盖 Steam、Epic Games、Battle.net（Blizzard）、EA、Ubisoft、Riot 和 Xbox 的域名规则。选项依次是全球手动、自动选择、各地区聚合组、`DIRECT`；通过 `default-selected: DIRECT` 保持首次使用默认直连。Clash Verge Rev / Bettbox 通过 `profile.store-selected` 保留已有选择；FlClash 由客户端自身保存并恢复。Bettbox 可单独关闭「游戏平台」开关，相关国际游戏规则会回落到 `国外流量`。
 
 三版均让 `category-games@cn` 和 `category-game-platforms-download@cn` 先于游戏平台规则直连，涵盖已收录的国内游戏域名及下载 CDN。此组依靠域名规则；未知下载域名或直连 IP 不保证命中，下载前可在客户端连接页面检查实际策略。
 
