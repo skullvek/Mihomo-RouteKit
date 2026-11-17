@@ -40,7 +40,7 @@ var serviceConfigs = [
 ];
 
 // Bettbox Android 全局覆写脚本
-// Version: 2026.11.08-r1
+// Version: 2026.11.17-r1
 // 目标：国内直连、国外代理；AI 强制代理；常用国际服务独立；地区聚合（自动测速 + 手动节点，按订阅实际地区动态出现）。
 // 用法：设置 -> 高级设置 -> 脚本；配置 -> 订阅 -> 覆写 -> 脚本。
 
@@ -1061,6 +1061,14 @@ function main(config) {
     // 国内游戏平台与下载 CDN 优先直连。
     "RULE-SET,SKULL_GamesCN,DIRECT",
     "RULE-SET,SKULL_GamesDownloadCN,DIRECT",
+
+    // Hermes 桌面端按目的地分流，不继承通用 Microsoft / Apple 的默认直连。
+    // 已有 LAN / AI / 补丁 / 中国区服务规则保持优先；共享 python/node 后端不按进程接管。
+    "AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_LanIP,no-resolve)),DIRECT",
+    "AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_China)),DIRECT",
+    "AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_Foreign)),国外流量",
+    "AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_ChinaIP)),DIRECT",
+    "PROCESS-NAME,Hermes.exe,国外流量",
 
     // 游戏平台先于通用服务匹配，Xbox 等流量由独立策略组控制。
     `RULE-SET,SKULL_Steam,${serviceTarget("游戏平台")}`,

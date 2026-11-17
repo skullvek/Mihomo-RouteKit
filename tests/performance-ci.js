@@ -61,8 +61,25 @@ function expectedOptionOrder(source) {
   assert.equal(swaps, 4, 'historical baseline must have exactly four option-pair swaps');
   return expected;
 }
+// Intentional 2026.11.17-r1 delta: add ONLY the five contracted Hermes rules
+// at the same source seam. Everything else remains compared without normalization.
+function expectedHermesRouting(source) {
+  const anchor = '    "RULE-SET,SKULL_GamesDownloadCN,DIRECT",';
+  assert.equal(source.split(anchor).length - 1, 1, 'historical Hermes insertion seam must be unique');
+  const lf = String.fromCharCode(10);
+  const crlf = String.fromCharCode(13, 10);
+  const newline = source.includes(crlf) ? crlf : lf;
+  const rules = [
+    'AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_LanIP,no-resolve)),DIRECT',
+    'AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_China)),DIRECT',
+    'AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_Foreign)),国外流量',
+    'AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_ChinaIP)),DIRECT',
+    'PROCESS-NAME,Hermes.exe,国外流量'
+  ];
+  return source.replace(anchor, anchor + newline + rules.map(rule => '    "' + rule + '",').join(newline));
+}
 const sources = new Map(SCRIPTS.map(file => [file, {
-  before: expectedOptionOrder(execFileSync('git', ['show', `${BASELINE}:${file}`], {cwd: ROOT, encoding: 'utf8'})),
+  before: expectedHermesRouting(expectedOptionOrder(execFileSync('git', ['show', `${BASELINE}:${file}`], {cwd: ROOT, encoding: 'utf8'}))),
   after: fs.readFileSync(path.join(ROOT, file), 'utf8')
 }]));
 

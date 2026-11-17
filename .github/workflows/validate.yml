@@ -54,10 +54,14 @@ jobs:
           chmod 755 "$RUNNER_TEMP/mihomo/mihomo"
       - name: Validate synthetic full configs and isolated core runtime membership
         run: node tests/mihomo-ci.js "$RUNNER_TEMP/mihomo/mihomo"
+      - name: Verify real process lookup and Hermes split routing
+        run: node tests/hermes-routing-ci.js "$RUNNER_TEMP/mihomo/mihomo"
       - name: Upload synthetic core evidence on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: synthetic-mihomo-evidence
-          path: ${{ runner.temp }}/mihomo-ci-*/
+          path: |
+            ${{ runner.temp }}/mihomo-ci-*/
+            ${{ runner.temp }}/hermes-routing-ci-*/
           retention-days: 7

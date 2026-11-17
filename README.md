@@ -36,6 +36,7 @@
 | 能力 | 默认行为 |
 | --- | --- |
 | 国内流量 | 中国大陆域名 / IP 与局域网优先 `DIRECT` |
+| Hermes 桌面端 | 已进入内核的 `Hermes.exe` 流量按国内 / 国外分流，不被通用 Microsoft / Apple 默认直连提前接管；AI 与自定义补丁仍优先 |
 | 基础分流 | `全球手动` / `自动选择` / `国外流量` / `漏网之鱼` 四个基础组；`国外流量` 首次默认 `全球手动`，`漏网之鱼` 默认落 `国外流量` |
 | AI 服务 | ChatGPT、Claude、Gemini / NotebookLM 独立分流，**不提供 `DIRECT` 路径**；三组首次默认 `全球手动` |
 | 常用国际服务 | Google、GitHub、X、YouTube、流媒体（Netflix / Disney+ / Prime Video / HBO Max / Spotify / TikTok）、Telegram、WhatsApp（域名 + Meta 网段 + 桌面进程全接管）、Microsoft、Apple 独立策略组；前七个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
@@ -55,11 +56,11 @@
 
 | 客户端 | 平台 | 脚本版本 | 脚本 |
 | --- | --- | --- | --- |
-| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.08-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
-| **Bettbox** | Android | `2026.11.08-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
-| **FlClash** | Android / Windows / macOS / Linux | `2026.11.08-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
+| **Clash Verge Rev** | Windows / macOS / Linux | `2026.11.17-r1` | [`Clash-Verge-Rev-mihomoScript.js`](./Clash-Verge-Rev-mihomoScript.js) |
+| **Bettbox** | Android | `2026.11.17-r1` | [`Bettbox-mihomoScript.js`](./Bettbox-mihomoScript.js) |
+| **FlClash** | Android / Windows / macOS / Linux | `2026.11.17-r1` | [`FlClash-mihomoScript.js`](./FlClash-mihomoScript.js) |
 
-> 三版脚本顶部版本标识当前统一为 `2026.11.08-r1`，并非每次补丁提交都修改版本标识。
+> 三版脚本顶部版本标识当前统一为 `2026.11.17-r1`，并非每次补丁提交都修改版本标识。
 >
 > 需要使用 **Mihomo 内核**，并支持 `include-all`、`exclude-type`、Rule Providers、`.mrs` 等相关特性。
 
@@ -154,6 +155,7 @@ https://raw.githubusercontent.com/skullvek/Mihomo-RouteKit/main/FlClash-mihomoSc
 | LAN / 中国大陆域名与 IP | `DIRECT` | 国内流量不经过额外“国内直连”策略组 |
 | ChatGPT / Claude / Gemini / NotebookLM | 对应 AI 组 | AI 组只提供代理路径；首次默认 `全球手动` |
 | Apple CN / Microsoft CN | `DIRECT` | 中国区规则优先于通用服务规则 |
+| Hermes 桌面进程 | 国内 `DIRECT`，国外及未知境外 `国外流量` | 先保留 LAN / AI / 补丁 / 中国区服务，再按私网 IP → 中国域名 → 国外域名 → 中国 IP → 兜底判断，不整体直连或整体代理 |
 | Google / GitHub / X / YouTube / 流媒体 / Telegram / WhatsApp / Microsoft / Apple | 对应服务组 | 可手动选择自动、地区、具体节点或 `DIRECT`；前七个组首次默认 `全球手动`，Microsoft / Apple 首次默认 `DIRECT` |
 | WhatsApp 进程与 Meta 网段 | `WhatsApp` | 桌面端 `PROCESS-NAME` 与 `facebook.mrs` 的 Meta 网段规则都指向该组，排在所有域名组之前；Android 无进程匹配 |
 | 游戏平台 | `游戏平台` | 三版均覆盖 Steam / Epic / Battle.net / EA / Ubisoft / Riot / Xbox；首次默认 `DIRECT` |
@@ -168,7 +170,7 @@ https://raw.githubusercontent.com/skullvek/Mihomo-RouteKit/main/FlClash-mihomoSc
 flowchart TD
     A[机场订阅] --> B[三端覆写脚本]
     B --> C[策略组：17 固定 + 地区组]
-    B --> D[48 / 50 / 50 条路由规则]
+    B --> D[53 / 55 / 55 条路由规则]
     E[38 个上游规则集] --> D
     F[3 个自维护补丁] --> D
     F --> G[Fake-IP 与 DNS 分流]
@@ -187,7 +189,7 @@ flowchart TD
 | 脚本定义策略组 | **19–35**（按订阅地区数） | **19–35** | **19–35** |
 | 主界面可见组 | **17–26** | **17–26** | **17–26** |
 | 隐藏地区测速组 | **1–9** | **1–9** | **1–9** |
-| 分流规则 | **48** | **50** | **50** |
+| 分流规则 | **53** | **55** | **55** |
 | Rule Providers | **41** | **41** | **41** |
 
 订阅里没有节点的地区不会建组，Bettbox 关闭服务或地区开关后对应组也会减少，因此实际组数按上表的区间变化。
@@ -200,7 +202,7 @@ flowchart TD
 
 ![三端扩展脚本的策略组结构：扩展脚本 → 主界面最多 26 个策略组（基础 / AI / 国际服务 / 地区聚合，地区组按订阅实际地区出现），右侧为各组可选项说明](assets/proxy-groups.png)
 
-> 三版脚本结构一致，图中顺序即主界面 01–26 的显示顺序；另有最多 9 个隐藏地区自动测速组未在图中。基础组 `国外流量`、`ChatGPT` / `Claude` / `Gemini / NotebookLM` 三个 AI 组与 Google / GitHub / X / YouTube / 流媒体 / Telegram / WhatsApp 七个服务组都通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则移除全部地区聚合组与对应的隐藏自动组。图中是 9 个地区全部有节点的情形；机场缺少某个地区的节点时该地区聚合组不会出现，主界面组数相应减少。
+> 三版脚本结构一致，图中顺序即主界面 01–26 的显示顺序；另有最多 9 个隐藏地区自动测速组未在图中。基础组 `国外流量`、`ChatGPT` / `Claude` / `Gemini / NotebookLM` 三个 AI 组与 Google / GitHub / X / YouTube / 流媒体 / Telegram / WhatsApp 七个服务组都通过 `default-selected: 全球手动` 首次默认选中 `全球手动`；`Microsoft` / `Apple` / `游戏平台` 通过 `default-selected: DIRECT` 首次默认直连。Hermes 桌面端额外采用国内 / 国外分流规则，不新增策略组，也不改变图中组顺序或默认值。Bettbox 关闭某个服务开关后该组会被移除、相关规则回落到 `国外流量`；关闭「地区分组」则移除全部地区聚合组与对应的隐藏自动组。图中是 9 个地区全部有节点的情形；机场缺少某个地区的节点时该地区聚合组不会出现，主界面组数相应减少。
 
 ### 主界面显示顺序（三版一致）
 
@@ -380,7 +382,7 @@ Expire / Traffic Remaining / Website ...
 
 ## 分流规则
 
-Clash Verge Rev 有 **48 条**、Bettbox / FlClash 各有 **50 条**分流规则；自上而下匹配，命中即停止。
+Clash Verge Rev 有 **53 条**、Bettbox / FlClash 各有 **55 条**分流规则；自上而下匹配，命中即停止。
 
 | 阶段 | 内容 | 目标 | 条数 |
 | --- | --- | --- | ---: |
@@ -391,6 +393,7 @@ Clash Verge Rev 有 **48 条**、Bettbox / FlClash 各有 **50 条**分流规则
 | 校时（Bettbox / FlClash） | `pool.ntp.org` 及子域名 / UDP 目标端口 123 | `DIRECT` | 2 |
 | 补丁 | `SKULL_CustomDirect` / `SKULL_CustomProxy` | `DIRECT` / `国外流量` | 2 |
 | 4 | `apple@cn` / `microsoft@cn` / 国内游戏平台与下载 CDN | `DIRECT` | 4 |
+| Hermes（桌面进程） | 私网 IP / 中国域名 / 国外域名 / 中国 IP / 其余兜底 | `DIRECT` / `国外流量`，见下文 | 5 |
 | 5 | 七个平台域名规则 | `游戏平台` | 7 |
 | 6 | YouTube / Google / GitHub / Microsoft / Apple / Telegram / WhatsApp / X / Netflix / Disney+ / Prime Video / HBO Max / Spotify / TikTok | 对应服务组 | 14 |
 | 7 | `cn` 中国大陆域名 | `DIRECT` | 1 |
@@ -398,7 +401,7 @@ Clash Verge Rev 有 **48 条**、Bettbox / FlClash 各有 **50 条**分流规则
 | 9 | private / Google / Telegram / Twitter / 流媒体 / Meta IP | 对应目标，`no-resolve` | 6 |
 | 10 | China IP | `DIRECT`，允许解析 | 1 |
 | 末 | `MATCH` | `漏网之鱼` | 1 |
-|  | **Clash Verge Rev / Bettbox / FlClash 合计** |  | **48 / 50 / 50** |
+|  | **Clash Verge Rev / Bettbox / FlClash 合计** |  | **53 / 55 / 55** |
 
 ### 关键优先级
 
@@ -411,6 +414,20 @@ Clash Verge Rev 有 **48 条**、Bettbox / FlClash 各有 **50 条**分流规则
 - 三版的国内游戏域名及下载 CDN 均位于七个平台的通用规则之前；Xbox 位于通用 Microsoft 之前
 - 中国域名位于 `geolocation-!cn` 之前
 - 中国 IP 作为未知域名的最终国内兜底，并允许触发解析
+
+### Hermes 桌面端的混合供应商分流
+
+`Hermes.exe` 可同时访问国内外供应商，不能用一条进程规则全部直连或全部代理。三版脚本在 AI、自定义补丁与中国区服务例外之后、通用游戏平台 / Microsoft / Apple 等服务之前，加入五条有序规则：
+
+1. 已知私网 IP 直连（`no-resolve`，不为判断私网而额外解析域名）。
+2. 命中 `SKULL_China` 的国内域名直连。
+3. 命中 `SKULL_Foreign` 的国外域名走 `国外流量`，先于中国 IP 兜底，避免国外域名因 CDN 地址被提前直连。
+4. 未知域名或裸 IP 命中 `SKULL_ChinaIP` 时直连，允许解析。
+5. 剩余 Hermes 桌面进程流量走 `国外流量`。
+
+因此 Hermes 访问境外微软资源时不再被 `Microsoft` 组默认 `DIRECT` 接管；其他应用的 Microsoft / Apple 组选择不变。OpenAI / Claude / Gemini 已有专属 AI 规则仍先命中；国内厂商国际版仍由 `CustomProxy` 优先纠偏。规则集可能更新或漏收，不能把“国内厂商”当成所有海外接口都应直连。
+
+**边界**：这些规则只处理已经进入 Mihomo 且能识别为 `Hermes.exe` 的连接；不自动让绕过代理的请求进入内核，也不接管共享的 `python.exe` / `node.exe`、独立 Magpie 桥接进程或它们的子进程。Android 无进程匹配，继续依靠域名 / IP 规则；macOS / Linux 的不同进程名不由 Windows 的 `.exe` 规则覆盖。脚本不修改 Hermes 配置，不开启 TUN，不改变客户端的进程查找开关。
 
 ### Bettbox 开关回落
 

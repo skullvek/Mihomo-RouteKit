@@ -20,7 +20,9 @@ function references(config) {
   }
   for (const rule of config.rules) {
     const parts = rule.split(',');
-    if (parts[0] === 'RULE-SET') assert.ok(providers[parts[1]], `RULE-SET ${parts[1]}`);
+    for (const match of rule.matchAll(/(?:^|\()RULE-SET,([^,)]+)/g)) {
+      assert.ok(providers[match[1]], `RULE-SET ${match[1]}`);
+    }
     // Logical rules contain nested commas; their outbound is still the last field.
     const target = parts.at(-1) === 'no-resolve' ? parts.at(-2) : parts.at(-1);
     assert.ok(known.has(target), `rule target ${target}`);
@@ -350,7 +352,7 @@ test('FlClash: defaults inherit Bettbox routing with current-repository patches'
     const flclash = execute(SCRIPTS[2], fixture(name), {noFromEntries: true});
     assert.deepEqual(flclash['proxy-groups'], bettbox['proxy-groups']);
     assert.deepEqual(flclash.rules, bettbox.rules);
-    assert.equal(flclash.rules.length, 50);
+    assert.equal(flclash.rules.length, 55);
     assert.deepEqual(flclash['rule-providers'], bettbox['rule-providers']);
     assert.deepEqual(flclash.dns['nameserver-policy'], bettbox.dns['nameserver-policy']);
     assert.equal(flclash.dns['direct-nameserver-follow-policy'], true);
