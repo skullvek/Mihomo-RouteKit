@@ -10,7 +10,7 @@
 
 脚本保留订阅里的 `proxies` / `proxy-providers`，**重建**主策略组、分流规则、Rule Providers 和整段 DNS。因此换机场通常不用改脚本。
 
-每次执行产出：**17 个固定主策略组 + 每个「订阅里真的有节点」的地区 2 组**（可见聚合组 + 隐藏 `url-test`；9 个地区全有时共 35 组，单地区机场 19 组）、**41 个 `SKULL_*` Rule Provider**（38 个上游 `.mrs` 经 jsDelivr `@meta` + 3 个自维护 `domain/text` 经 Raw）、**53 / 55 / 55 条规则**、完整 `dns` 段。
+每次执行产出：**17 个固定主策略组 + 每个「订阅里真的有节点」的地区 2 组**（可见聚合组 + 隐藏 `url-test`；9 个地区全有时共 35 组，单地区机场 19 组）、**41 个 `SKULL_*` Rule Provider**（38 个上游 `.mrs` 经 jsDelivr `@meta` + 3 个自维护 `domain/text` 经 Raw）、**48 / 50 / 50 条规则**、完整 `dns` 段。
 
 ## 2. 目录地图
 
@@ -22,10 +22,9 @@
 | `rules/direct.list` | `SKULL_CustomDirect`，先于 CN 分类直连 | 只写域名，一行一个 |
 | `rules/proxy.list` | `SKULL_CustomProxy`，先于 CN 分类走 `国外流量` | 同上 |
 | `rules/fake-ip-filter.list` | `SKULL_FakeIPFilter`，仅排除 Fake-IP | 不改变直连/代理去向 |
-| `tests/validate.js` | `node --test` 契约回归 | 契约、开关组合、地区裁剪、三端一致性、规则文件格式 |
+| `tests/validate.js` | `node --test` 既有回归（74 项） | 契约、开关组合、地区裁剪、三端一致性、规则文件格式 |
 | `tests/fixtures/*.json` | 5 份合成订阅 | 全部假数据，**不得写入真实订阅** |
 | `tests/repair.test.js` / `tests/repair-cases.js` | 七项审计行为回归与共享合成输入 | 先补审计复现，再改生产脚本；含真实循环、开关碰撞对照 |
-| `tests/hermes-routing-ci.js` | 固定内核的 Hermes 路由门禁 | 真实进程查找 + 本机 DNS / HTTP 合成服务；国内外、补丁、AI、未知 IP 兜底与非 Hermes 对照，不连真实节点 |
 | `tests/mihomo-ci.js` | 固定 v1.19.33 真实内核门禁 | 完整合成配置 `-t` 成功日志 + 隔离运行态成员与输出 dialer |
 | `tests/performance-ci.js` | 云端等价性能门禁与基准 | 固定优化前 SHA，完整输出 + 有序告警对拍（含复用 VM），构造次数门禁，计时仅作证据；有意改行为时需同步审查基线与契约 |
 | `tests/engine-cases.js` + `tests/quickjs_check.py` | Node ↔ 真实 QuickJS 对照 | 只在 CI 跑（本地通常没有 `quickjs`） |
@@ -53,7 +52,7 @@
 
    `default-selected` 是字符串成员名；`select` 组没有它就从选项第一项开始。改动默认值时必须在 `tests/validate.js` 的 `core design contracts` 里加断言。
 5. **规则顺序固定**（命中即停）：
-   LAN → 2 条 `PROCESS-NAME`（WhatsApp，桌面端生效）→ NotebookLM/Gemini 精确域名 → OpenAI/Claude/Gemini →（Bettbox/FlClash）`pool.ntp.org` 与 UDP/123 → `SKULL_CustomDirect` → `SKULL_CustomProxy` → `apple@cn` / `microsoft@cn` / 国内游戏与下载 CDN → Hermes.exe 五条分流（私网 IP no-resolve / cn / !cn / China IP / 国外兜底）→ 7 个游戏平台 → 10 个服务组 → `cn` → `geolocation-!cn` → 6 条 IP（`no-resolve`）→ China IP → `MATCH,漏网之鱼`。
+   LAN → 2 条 `PROCESS-NAME`（WhatsApp，桌面端生效）→ NotebookLM/Gemini 精确域名 → OpenAI/Claude/Gemini →（Bettbox/FlClash）`pool.ntp.org` 与 UDP/123 → `SKULL_CustomDirect` → `SKULL_CustomProxy` → `apple@cn` / `microsoft@cn` / 国内游戏与下载 CDN → 7 个游戏平台 → 10 个服务组 → `cn` → `geolocation-!cn` → 6 条 IP（`no-resolve`）→ China IP → `MATCH,漏网之鱼`。
    改顺序前先想清楚谁会被提前接管（典型事故：AI 被 Google 抢走、Xbox 被 Microsoft 抢走、国内游戏走代理）。
 6. **DNS 结构**：fake-ip `198.18.0.1/16` + `blacklist`（只继承订阅中同为 blacklist 的 filter）；国内域名/自定义直连走国内 DoH `#DIRECT`；默认与境外走 Cloudflare/Google DoH `#国外流量`；AI 域名 `nameserver-policy` 跟随各自 AI 组；`direct-nameserver` 与 `proxy-server-nameserver` 用国内 DoH（后者防 `nameserver → 国外流量 → 节点域名` 循环）。三端 `direct-nameserver-follow-policy: true`：直连拨号解析也遵守 `nameserver-policy`（LAN → `system`，AI/补丁域名跟随各自组），未命中 policy 的域名回落 `direct-nameserver`，内网主机名不外发。
 7. **`rules/*.list` 只写域名**：`+.example.com` 匹配主域与全部子域，裸域名精确匹配。不写 `DOMAIN-SUFFIX,`、策略名或 `payload:`。CI 会校验格式、重复行、直连/代理冲突，并拒绝把共享父域整体代理（如 `mchost.guru`、`aliyuncs.com`）。
@@ -147,6 +146,5 @@ node -e 'const {execute,SCRIPTS}=require("./tests/helpers");for(const f of SCRIP
 - 不要为了让测试通过去改测试断言（除非契约本身被有意修改，并在提交信息里说明）。
 - 不要无条件保留机场原策略组；只有 `preserveDependencies()` 判定被引用的才保留，并隐藏。
 - 不要在 AI 组、`国外流量` 里加 `DIRECT`，也不要让 AI 组引用可切到 `DIRECT` 的上级组。
-- Hermes 混合供应商按目的地分流：只匹配 `Hermes.exe`，先保留 LAN / AI / 补丁 / 中国区例外；禁止把共享 python/node 进程全量接管。进程规则不负责让应用流量进入内核，不修改 Hermes/TUN 设置。
 - 不要整体代理共享父域（`mchost.guru`、`aliyuncs.com`、`tencentcloudapi.com` 等）。
 - 不要在 README 里贴真实订阅、节点名、截图中的凭据。

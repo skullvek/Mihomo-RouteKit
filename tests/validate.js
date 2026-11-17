@@ -20,9 +20,7 @@ function references(config) {
   }
   for (const rule of config.rules) {
     const parts = rule.split(',');
-    for (const match of rule.matchAll(/(?:^|\()RULE-SET,([^,)]+)/g)) {
-      assert.ok(providers[match[1]], `RULE-SET ${match[1]}`);
-    }
+    if (parts[0] === 'RULE-SET') assert.ok(providers[parts[1]], `RULE-SET ${parts[1]}`);
     // Logical rules contain nested commas; their outbound is still the last field.
     const target = parts.at(-1) === 'no-resolve' ? parts.at(-2) : parts.at(-1);
     assert.ok(known.has(target), `rule target ${target}`);
@@ -103,31 +101,6 @@ for (const file of SCRIPTS) {
     assert.ok(c.dns['proxy-server-nameserver'].every(url => url.endsWith('#DIRECT')));
     assert.equal(c.dns['direct-nameserver-follow-policy'], true);
     assert.ok(c.dns['direct-nameserver'].every(url => url.endsWith('#DIRECT')));
-  });
-  test(`${file}: Hermes keeps domestic and foreign routing ahead of generic service defaults`, () => {
-    const c = execute(file, fixture('direct-proxies'));
-    const expected = [
-      'AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_LanIP,no-resolve)),DIRECT',
-      'AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_China)),DIRECT',
-      'AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_Foreign)),国外流量',
-      'AND,((PROCESS-NAME,Hermes.exe),(RULE-SET,SKULL_ChinaIP)),DIRECT',
-      'PROCESS-NAME,Hermes.exe,国外流量'
-    ];
-    const start = c.rules.indexOf(expected[0]);
-    assert.ok(start >= 0, 'Hermes split-routing guard must exist before Microsoft can select DIRECT');
-    assert.deepEqual(c.rules.slice(start, start + expected.length), expected);
-    const index = rule => c.rules.indexOf(rule);
-    for (const rule of ['RULE-SET,SKULL_Lan,DIRECT', 'RULE-SET,SKULL_OpenAI,ChatGPT',
-      'RULE-SET,SKULL_Claude,Claude', 'RULE-SET,SKULL_CustomDirect,DIRECT',
-      'RULE-SET,SKULL_CustomProxy,国外流量', 'RULE-SET,SKULL_GamesDownloadCN,DIRECT']) {
-      assert.ok(index(rule) >= 0 && index(rule) < start, rule + ': protected route keeps priority');
-    }
-    assert.ok(start + expected.length <= index('RULE-SET,SKULL_Steam,游戏平台'));
-    assert.ok(start + expected.length <= index('RULE-SET,SKULL_Microsoft,Microsoft'));
-    assert.equal(c['proxy-groups'].find(g => g.name === 'Microsoft')['default-selected'], 'DIRECT');
-    assert.ok(!c.rules.some(rule => /PROCESS-(?:NAME|PATH)(?:-REGEX|-WILDCARD)?,(?:python|node|electron)/i.test(rule)),
-      'shared runtimes must not inherit Hermes ownership');
-    references(c);
   });
   test(`${file}: airport tokens classified once with letter boundaries`, () => {
     // 9 个地区各放一个节点，保证 9 个地区组都存在，再用组自身的 filter 反查分类结果。
@@ -352,7 +325,7 @@ test('FlClash: defaults inherit Bettbox routing with current-repository patches'
     const flclash = execute(SCRIPTS[2], fixture(name), {noFromEntries: true});
     assert.deepEqual(flclash['proxy-groups'], bettbox['proxy-groups']);
     assert.deepEqual(flclash.rules, bettbox.rules);
-    assert.equal(flclash.rules.length, 55);
+    assert.equal(flclash.rules.length, 50);
     assert.deepEqual(flclash['rule-providers'], bettbox['rule-providers']);
     assert.deepEqual(flclash.dns['nameserver-policy'], bettbox.dns['nameserver-policy']);
     assert.equal(flclash.dns['direct-nameserver-follow-policy'], true);
