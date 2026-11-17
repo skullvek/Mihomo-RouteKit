@@ -121,7 +121,9 @@ async function main() {
             const sourcePort = await eventually(item.host + ': client', child, () => stderr, () => JSON.parse(stdout.trim().split('\n')[0]).sourcePort);
             const connection = await eventually(script + ': ' + item.host, core, () => coreLog + '\n' + stderr, async () => {
               const all = (await fetchJSON(endpoint + '/connections')).connections;
-              const match = all.find(c => c.metadata.sourcePort === sourcePort &&
+              fs.writeFileSync(path.join(directory, 'connections.json'), JSON.stringify(all, null, 2));
+              // Mihomo v1.19.33 encodes uint16 ports as JSON strings for compatibility.
+              const match = all.find(c => Number(c.metadata.sourcePort) === sourcePort &&
                 c.metadata.process === item.process && (c.metadata.host === item.host ||
                 (net.isIP(item.host) && c.metadata.destinationIP === item.host)));
               assert.ok(match, 'connection must remain open');
